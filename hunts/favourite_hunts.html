@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VAULT 4624 - Threat Hunting Overview</title>
   <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="stylesheet" href="../css/styles.css">
   <style>
     .hunt-container {
       display: flex;
@@ -71,6 +71,9 @@
       border-left: 2px solid var(--dim-color);
       cursor: pointer;
       transition: all 0.3s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .sub-collapsible:hover {
@@ -92,6 +95,96 @@
       display: block;
     }
 
+    .attack-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      background: rgba(255, 204, 0, 0.1);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      margin: 2px;
+      font-size: 0.9em;
+    }
+
+    .vendor-tabs {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .vendor-tab {
+      padding: 8px 16px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9em;
+    }
+
+    .vendor-tab:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.2);
+    }
+
+    .vendor-tab.active {
+      background: var(--main-color);
+      color: var(--bg-color);
+      border-color: var(--main-color);
+    }
+
+    .vendor-content {
+      display: none;
+    }
+
+    .vendor-content.active {
+      display: block;
+    }
+
+    .update-status {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 0.8em;
+      border-radius: 3px;
+    }
+
+    .status-cached {
+      background: rgba(74, 250, 154, 0.2);
+      color: var(--main-color);
+    }
+
+    .status-loading {
+      background: rgba(255, 204, 0, 0.2);
+      color: var(--warning);
+    }
+
+    .status-error {
+      background: rgba(255, 0, 0, 0.2);
+      color: var(--error);
+    }
+
+    .update-controls {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .loader {
+      border: 2px solid var(--dim-color);
+      border-top: 2px solid var(--main-color);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     @media (max-width: 968px) {
       .hunt-container {
         flex-direction: column;
@@ -100,6 +193,9 @@
         width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--dim-color);
+      }
+      .vendor-tabs {
+        flex-direction: column;
       }
     }
   </style>
@@ -132,11 +228,11 @@
   <!-- Hero Section -->
   <section class="hero">
     <h1>THREAT HUNTING METHODOLOGIES</h1>
-    <p class="subtitle">Common attack behaviors, key indicators & detection queries</p>
+    <p class="subtitle">Automated detection rules from community sources</p>
     <div class="status-bar">
       <div class="status-item">
         <span class="status-indicator success"></span>
-        HUNT DATABASE LOADED
+        <span id="cache-status">CHECKING CACHE...</span>
       </div>
       <div class="status-item">
         <span class="status-indicator warning"></span>
@@ -144,13 +240,21 @@
       </div>
       <div class="status-item">
         <span class="status-indicator success"></span>
-        QUERIES READY
+        <span id="rule-count">0 RULES LOADED</span>
       </div>
     </div>
   </section>
 
   <!-- Main Content -->
   <div class="content-wrapper">
+    <div class="update-controls">
+      <button class="control-btn" onclick="updateAllRules()">
+        <span id="update-btn-text">UPDATE ALL RULES</span>
+      </button>
+      <button class="control-btn" onclick="clearCache()">CLEAR CACHE</button>
+      <span id="last-update" style="color: var(--dim-color); margin-left: 10px;"></span>
+    </div>
+
     <h2 class="section-header">
       <span class="prompt">&gt;&gt;</span> SELECT HUNT CATEGORY
     </h2>
@@ -162,22 +266,22 @@
           <span class="prompt">&gt;</span> [ HOME ]
         </div>
         <div class="hunt-menu-item" onclick="showHunt('rmm')">
-          <span class="prompt">&gt;</span> [ REMOTE MONITORING & MANAGEMENT SOFTWARE ]
+          <span class="prompt">&gt;</span> [ REMOTE ACCESS TOOLS ]
         </div>
         <div class="hunt-menu-item" onclick="showHunt('filesharing')">
-          <span class="prompt">&gt;</span> [ FILESHARING SOFTWARE ]
+          <span class="prompt">&gt;</span> [ FILESHARING & EXFILTRATION ]
         </div>
-        <div class="hunt-menu-item" onclick="showHunt('remote')">
-          <span class="prompt">&gt;</span> [ REMOTE LOGIN & EXTERNAL ADDRESSES ]
+        <div class="hunt-menu-item" onclick="showHunt('powershell')">
+          <span class="prompt">&gt;</span> [ POWERSHELL EXPLOITATION ]
         </div>
-        <div class="hunt-menu-item" onclick="showHunt('netexe')">
-          <span class="prompt">&gt;</span> [ EXPLOITATION OF NET.EXE ]
+        <div class="hunt-menu-item" onclick="showHunt('credentials')">
+          <span class="prompt">&gt;</span> [ CREDENTIAL DUMPING ]
         </div>
-        <div class="hunt-menu-item" onclick="showHunt('outbound')">
-          <span class="prompt">&gt;</span> [ OUTBOUND SSH, SFTP & FTP ]
+        <div class="hunt-menu-item" onclick="showHunt('lateral')">
+          <span class="prompt">&gt;</span> [ LATERAL MOVEMENT ]
         </div>
-        <div class="hunt-menu-item" onclick="showHunt('bytes')">
-          <span class="prompt">&gt;</span> [ LARGE OUTBOUND BYTES ]
+        <div class="hunt-menu-item" onclick="showHunt('persistence')">
+          <span class="prompt">&gt;</span> [ PERSISTENCE MECHANISMS ]
         </div>
       </div>
 
@@ -186,371 +290,356 @@
         
         <!-- HOME CONTENT -->
         <div id="home" class="hunt-content-section active">
-          <h3>&gt;&gt; HOME</h3>
+          <h3>&gt;&gt; AUTOMATED THREAT HUNTING PLATFORM</h3>
           <br/>
-          <p>The following options provide valuable insight into potential security threats and vulnerabilities within a network. Each category includes:</p>
+          <p>This platform automatically fetches the latest detection rules from leading open-source repositories:</p>
           <br/>
-          <ul>
-            <li>MITRE ATT&CK framework mappings</li>
-            <li>Detection queries for multiple platforms</li>
-            <li>Indicators of compromise (IOCs)</li>
-            <li>Real-world hunting scenarios</li>
+          <ul style="line-height: 1.8;">
+            <li><strong>Sigma Rules</strong> - Universal SIEM detection format</li>
+            <li><strong>Splunk Detections</strong> - Enterprise security analytics</li>
+            <li><strong>Elastic Rules</strong> - Open-source SIEM detections</li>
+            <li><strong>Microsoft Sentinel</strong> - KQL queries for Azure</li>
+            <li><strong>CrowdStrike Falcon</strong> - EDR hunting queries</li>
+            <li><strong>Chronicle</strong> - Google security analytics</li>
           </ul>
           <br/>
-          <p>Select a category from the menu to begin your threat hunt.</p>
+          <p style="color: var(--warning);">⚠️ All rules should be tested in a controlled environment before production deployment.</p>
+          <br/>
+          <p style="color: var(--main-color);">Click "UPDATE ALL RULES" to fetch the latest detections from GitHub!</p>
         </div>
 
-        <!-- RMM SOFTWARE CONTENT -->
+        <!-- RMM/REMOTE ACCESS CONTENT -->
         <div id="rmm" class="hunt-content-section">
-          <h3>&gt;&gt; REMOTE MONITORING & MANAGEMENT SOFTWARE</h3>
+          <h3>&gt;&gt; REMOTE ACCESS TOOLS</h3>
           <br/>
-          <h4>&gt;&gt; CONSIDER THIS</h4>
-          <br/>
-          <p>Remote Monitoring & Management (RMM) software enables IT professionals to remotely monitor, manage, and maintain IT systems and networks. Threat hunters should focus on detecting misuse of RMM tools by adversaries who exploit these tools for unauthorized access, persistence, and lateral movement.</p>
-          <br/>
-          <p><strong>ATT&CK Category:</strong></p>
-          <ul style="margin-left: 20px;">
-            <li>Initial Access</li>
-            <li>Persistence</li>
-            <li>Privilege Escalation</li>
-            <li>Defense Evasion</li>
-          </ul>
-          <br/>
-          <p><strong>ATT&CK Tags:</strong></p>
-          <ul style="margin-left: 20px;">
-            <li>Valid Accounts, T1078: Valid Accounts</li>
-            <li>Account Manipulation, T1098: Account Manipulation</li>
-            <li>Obfuscated Files or Information, T1027: Obfuscated Files or Information</li>
-          </ul>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1219: Remote Access Software</span>
+            <span class="attack-tag">T1078: Valid Accounts</span>
+            <span class="attack-tag">T1021: Remote Services</span>
+          </div>
           <br/>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ ALL RMM SOFTWARE - DOMAINS & EXECUTABLES ]
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'rmm', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'falcon')">Falcon</div>
           </div>
-          <div class="sub-content">
-            <p>Please find below an exhaustive list of RMM software, and their corresponding domains and executables. Use these for your rules.</p>
-            <br/>
+
+          <div id="rmm-sigma" class="vendor-content active">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code">- Access Remote PC:
-  - Executables: rpcgrab.exe, rpcsetup.exe
-
-- Action1:
-  - Domain: action1.com
-  - Executables: action1_agent.exe
-
-- AnyDesk:
-  - Domain: anydesk.com
-  - Executables: anydesk.exe
-
-- TeamViewer:
-  - Domain: teamviewer.com
-  - Executables: teamviewer.exe, tv_w32.exe, tv_x64.exe
-
-- ConnectWise Control:
-  - Domain: connectwise.com
-  - Executables: screenconnect.exe
-
-- LogMeIn:
-  - Domain: logmein.com
-  - Executables: logmein.exe, lmi_rescue.exe</pre>
+              <pre class="copyable-code" id="rmm-sigma-content">Loading Sigma rules...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ SIGMA RULE ]
-          </div>
-          <div class="sub-content">
-            <p>The following SIGMA rule has been created with the help of online tooling and has not been tested within a corporate or sandboxed environment. Please use as a general framework.</p>
-            <br/>
+          <div id="rmm-splunk" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code">title: Suspicious RMM Software Execution
-logsource:
-  category: process_creation
-  product: windows
-detection:
-  selection:
-    Image|endswith:
-      - '\\teamviewer.exe'
-      - '\\anydesk.exe'
-      - '\\screenconnect.exe'
-      - '\\logmein.exe'
-  condition: selection
-falsepositives:
-  - Legitimate use of RMM tools by IT staff
-level: medium</pre>
+              <pre class="copyable-code" id="rmm-splunk-content">Loading Splunk detection...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
-          </div>
-          <div class="sub-content">
-            <p>The following FALCON rule has been created with the help of online tooling and has not been tested within a corporate or sandboxed environment. Please use as a general framework.</p>
-            <br/>
+          <div id="rmm-elastic" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code">DeviceProcessEvents
-| where FileName in~ ("teamviewer.exe", "anydesk.exe", "screenconnect.exe", "logmein.exe")
-| project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine
-| order by Timestamp desc</pre>
+              <pre class="copyable-code" id="rmm-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="rmm-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="rmm-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="rmm-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="rmm-falcon-content">Loading Falcon query...</pre>
             </div>
           </div>
         </div>
 
         <!-- FILESHARING CONTENT -->
         <div id="filesharing" class="hunt-content-section">
-          <h3>&gt;&gt; FILESHARING SOFTWARE</h3>
+          <h3>&gt;&gt; FILESHARING & EXFILTRATION</h3>
           <br/>
-          <h4>&gt;&gt; CONSIDER THIS</h4>
-          <br/>
-          <p>Filesharing software facilitates the transfer and sharing of files across different systems and users. Within the MITRE ATT&CK framework, this software can be exploited by adversaries for a range of malicious activities including initial access, persistence, data exfiltration, and defense evasion.</p>
-          <br/>
-          <p>Threat hunters should be vigilant in monitoring the use of filesharing tools for signs of unauthorized access, unusual file transfer sizes, and patterns indicative of data exfiltration.</p>
-          <br/>
-          <p><strong>ATT&CK Category:</strong></p>
-          <ul style="margin-left: 20px;">
-            <li>Initial Access</li>
-            <li>Persistence</li>
-            <li>Exfiltration</li>
-            <li>Defense Evasion</li>
-          </ul>
-          <br/>
-          <p><strong>ATT&CK Tags and IDs:</strong></p>
-          <ul style="margin-left: 20px;">
-            <li>T1078: Valid Accounts</li>
-            <li>T1030: Data Transfer Size Limits</li>
-            <li>T1567: Exfiltration Over Web Service</li>
-          </ul>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1567: Exfiltration Over Web Service</span>
+            <span class="attack-tag">T1048: Exfiltration Over Alternative Protocol</span>
+            <span class="attack-tag">T1020: Automated Exfiltration</span>
+          </div>
           <br/>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ ALL FILESHARING SOFTWARE - DOMAINS & EXECUTABLES ]
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'filesharing', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'falcon')">Falcon</div>
           </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+
+          <div id="filesharing-sigma" class="vendor-content active">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="filesharing-sigma-content">Loading Sigma rules...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ SIGMA RULE ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="filesharing-splunk" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="filesharing-splunk-content">Loading Splunk detection...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="filesharing-elastic" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="filesharing-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="filesharing-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="filesharing-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="filesharing-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="filesharing-falcon-content">Loading Falcon query...</pre>
             </div>
           </div>
         </div>
 
-        <!-- REMOTE LOGIN CONTENT -->
-        <div id="remote" class="hunt-content-section">
-          <h3>&gt;&gt; REMOTE LOGIN & EXTERNAL ADDRESSES</h3>
+        <!-- POWERSHELL CONTENT -->
+        <div id="powershell" class="hunt-content-section">
+          <h3>&gt;&gt; POWERSHELL EXPLOITATION</h3>
           <br/>
-          <h4>&gt;&gt; CONSIDER THIS</h4>
-          <br/>
-          <p>Remote Login & External Addresses are critical areas for threat hunters to monitor due to their potential for enabling unauthorized access and facilitating cyber attacks. Remote login services allow users to access internal systems from outside the corporate network, making them attractive targets for attackers seeking to gain a foothold.</p>
-          <br/>
-          <p>Threat actors often exploit weak or compromised credentials to perform brute force or phishing attacks, allowing them to infiltrate networks undetected.</p>
-          <br/>
-          <p><strong>ATT&CK Category:</strong> Initial Access, Persistence, Privilege Escalation, Defense Evasion</p>
-          <p><strong>ATT&CK Tag:</strong> Valid Accounts</p>
-          <p><strong>ATT&CK ID:</strong> T1078</p>
-          <p><strong>Minimum Log Source Requirement:</strong> Windows</p>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1059.001: PowerShell</span>
+            <span class="attack-tag">T1027: Obfuscated Files or Information</span>
+            <span class="attack-tag">T1140: Deobfuscate/Decode Files or Information</span>
+          </div>
           <br/>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'powershell', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'falcon')">Falcon</div>
           </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+
+          <div id="powershell-sigma" class="vendor-content active">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="powershell-sigma-content">Loading Sigma rules...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ SIGMA RULE ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="powershell-splunk" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="powershell-splunk-content">Loading Splunk detection...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="powershell-elastic" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
-            </div>
-          </div>
-        </div>
-
-        <!-- NET.EXE CONTENT -->
-        <div id="netexe" class="hunt-content-section">
-          <h3>&gt;&gt; EXPLOITATION OF NET.EXE</h3>
-          <br/>
-          <p>Exploitation of NET.EXE is a critical concern for threat hunters, especially when it involves the creation of user accounts. The NET.EXE command is a versatile and powerful utility in Windows environments, used for a variety of administrative tasks, including managing user accounts, services, and network resources.</p>
-          <br/>
-          <p>However, this same power makes it an attractive target for cyber attackers. If compromised, attackers can use NET.EXE to create unauthorized user accounts, often with administrative privileges, to gain persistent access to the network.</p>
-          <br/>
-          <p>Monitoring for unusual or suspicious use of NET.EXE, particularly for account creation, can help threat hunters identify and respond to unauthorized activities, preventing privilege escalation and maintaining the security of the network.</p>
-          <br/>
-
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
-            <div class="code-container">
-              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="powershell-elastic-content">Loading Elastic rule...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ SIGMA RULE ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="powershell-sentinel" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="powershell-sentinel-content">Loading Sentinel KQL query...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="powershell-falcon" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="powershell-falcon-content">Loading Falcon query...</pre>
             </div>
           </div>
         </div>
 
-        <!-- OUTBOUND CONTENT -->
-        <div id="outbound" class="hunt-content-section">
-          <h3>&gt;&gt; OUTBOUND SSH, SFTP & FTP TO EXTERNAL ADDRESSES</h3>
+        <!-- CREDENTIALS CONTENT -->
+        <div id="credentials" class="hunt-content-section">
+          <h3>&gt;&gt; CREDENTIAL DUMPING</h3>
           <br/>
-          <p>Outbound SSH, SFTP, and FTP to External Addresses are critical areas of focus for threat hunters due to their potential use in data exfiltration and unauthorized access. These protocols facilitate secure file transfer and remote access, but when used to connect to external addresses, they can be exploited by attackers to transfer sensitive data out of the organization or to establish remote control over compromised systems.</p>
-          <br/>
-          <p>Monitoring outbound SSH, SFTP, and FTP traffic helps threat hunters detect unusual or unauthorized connections, identify potential data breaches, and prevent malicious actors from maintaining external communication channels.</p>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1003: OS Credential Dumping</span>
+            <span class="attack-tag">T1552: Unsecured Credentials</span>
+            <span class="attack-tag">T1555: Credentials from Password Stores</span>
+          </div>
           <br/>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'credentials', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'falcon')">Falcon</div>
           </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+
+          <div id="credentials-sigma" class="vendor-content active">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="credentials-sigma-content">Loading Sigma rules...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ SIGMA RULE ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="credentials-splunk" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="credentials-splunk-content">Loading Splunk detection...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="credentials-elastic" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="credentials-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="credentials-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="credentials-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="credentials-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="credentials-falcon-content">Loading Falcon query...</pre>
             </div>
           </div>
         </div>
 
-        <!-- LARGE BYTES CONTENT -->
-        <div id="bytes" class="hunt-content-section">
-          <h3>&gt;&gt; LARGE OUTBOUND BYTES</h3>
+        <!-- LATERAL MOVEMENT CONTENT -->
+        <div id="lateral" class="hunt-content-section">
+          <h3>&gt;&gt; LATERAL MOVEMENT</h3>
           <br/>
-          <p>Large Outbound Bytes are a significant concern for threat hunters as they can indicate data exfiltration or other unauthorized transfers of sensitive information. When unusually large amounts of data are being sent out of the network, it may suggest that an attacker is stealing valuable data, whether intellectual property, personal information, or proprietary business information.</p>
-          <br/>
-          <p>Monitoring for large outbound data transfers helps threat hunters detect and respond to potential breaches in real-time, mitigating the risk of data loss and maintaining the security of the organization's information assets.</p>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1021: Remote Services</span>
+            <span class="attack-tag">T1570: Lateral Tool Transfer</span>
+            <span class="attack-tag">T1563: Remote Service Session Hijacking</span>
+          </div>
           <br/>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'lateral', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'falcon')">Falcon</div>
           </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+
+          <div id="lateral-sigma" class="vendor-content active">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="lateral-sigma-content">Loading Sigma rules...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ SIGMA RULE ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="lateral-splunk" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="lateral-splunk-content">Loading Splunk detection...</pre>
             </div>
           </div>
 
-          <div class="sub-collapsible" onclick="toggleSub(this)">
-            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
-          </div>
-          <div class="sub-content">
-            <p>Content coming soon...</p>
-            <br/>
+          <div id="lateral-elastic" class="vendor-content">
             <div class="code-container">
               <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
-              <pre class="copyable-code"># Content to be added</pre>
+              <pre class="copyable-code" id="lateral-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="lateral-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="lateral-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="lateral-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="lateral-falcon-content">Loading Falcon query...</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERSISTENCE CONTENT -->
+        <div id="persistence" class="hunt-content-section">
+          <h3>&gt;&gt; PERSISTENCE MECHANISMS</h3>
+          <br/>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1547: Boot or Logon Autostart Execution</span>
+            <span class="attack-tag">T1053: Scheduled Task/Job</span>
+            <span class="attack-tag">T1136: Create Account</span>
+          </div>
+          <br/>
+
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'persistence', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'falcon')">Falcon</div>
+          </div>
+
+          <div id="persistence-sigma" class="vendor-content active">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-sigma-content">Loading Sigma rules...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-splunk" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-splunk-content">Loading Splunk detection...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-elastic" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-falcon-content">Loading Falcon query...</pre>
             </div>
           </div>
         </div>
@@ -562,45 +651,273 @@ level: medium</pre>
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
-      <p>&gt;&gt; VAULT 4624 THREAT HUNTING METHODOLOGIES</p>
-      <p>Continuously updated with new detection techniques</p>
+      <p>&gt;&gt; VAULT 4624 AUTOMATED THREAT HUNTING PLATFORM</p>
+      <p>Powered by open-source detection engineering communities</p>
       <p style="margin-top: 10px;"><a href="../../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
     </div>
   </footer>
 
   <script>
-    // Show selected hunt category
+    // Configuration
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+    const RULE_SOURCES = {
+      sigma: {
+        rmm: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/process_creation/proc_creation_win_remote_access_tools_anydesk.yml',
+        filesharing: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/proxy/proxy_download_susp_tlds_blacklist.yml',
+        powershell: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/powershell/powershell_script/posh_ps_susp_invoke_obfuscation.yml',
+        credentials: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/process_creation/proc_creation_win_susp_procdump.yml',
+        lateral: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/builtin/security/win_security_susp_failed_logon_source.yml',
+        persistence: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/registry/registry_set/registry_set_asep_reg_keys_modification_currentversion.yml'
+      },
+      splunk: {
+        rmm: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/detect_remote_access_software_usage_process.yml',
+        filesharing: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/office_product_spawning_bitsadmin.yml',
+        powershell: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/powershell_invoke_expression.yml',
+        credentials: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/credential_dumping_via_copy_command_from_shadow_copy.yml',
+        lateral: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/remote_desktop_process_running_on_system.yml',
+        persistence: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/registry_keys_used_for_persistence.yml'
+      },
+      elastic: {
+        rmm: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/command_and_control_remote_access_software.toml',
+        filesharing: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/exfiltration_file_transfer_to_external_site.toml',
+        powershell: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/execution_suspicious_powershell_encoded_command.toml',
+        credentials: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/credential_access_lsass_memory_dump.toml',
+        lateral: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/lateral_movement_suspicious_rdp_client_connection.toml',
+        persistence: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/persistence_suspicious_scheduled_task_creation.toml'
+      }
+    };
+
+    // Fallback rules if fetch fails
+    const FALLBACK_RULES = {
+      falcon: {
+        rmm: `// Hunt for Remote Access Tools
+DeviceProcessEvents
+| where Timestamp > ago(7d)
+| where FileName in~ ("anydesk.exe", "teamviewer.exe", "screenconnect.exe")
+| project Timestamp, DeviceName, FileName, ProcessCommandLine`,
+        filesharing: `// Hunt for File Sharing Activity
+DeviceNetworkEvents
+| where RemoteUrl has_any ("dropbox.com", "drive.google.com", "mega.nz")
+| where SentBytes > 100000000
+| project Timestamp, DeviceName, RemoteUrl, SentBytes`,
+        powershell: `// Hunt for Suspicious PowerShell
+DeviceProcessEvents
+| where FileName =~ "powershell.exe"
+| where ProcessCommandLine has_any ("-enc", "-encodedcommand", "invoke-expression")
+| project Timestamp, DeviceName, ProcessCommandLine`,
+        credentials: `// Hunt for Credential Access
+DeviceProcessEvents
+| where FileName in~ ("procdump.exe", "mimikatz.exe")
+| or ProcessCommandLine has_any ("lsass", "sekurlsa")
+| project Timestamp, DeviceName, FileName, ProcessCommandLine`,
+        lateral: `// Hunt for Lateral Movement
+DeviceLogonEvents
+| where LogonType == "Network"
+| where RemoteIP !startswith "10."
+| project Timestamp, DeviceName, AccountName, RemoteIP, LogonType`,
+        persistence: `// Hunt for Persistence Mechanisms
+DeviceRegistryEvents
+| where RegistryKey has_any ("Run", "RunOnce", "Startup")
+| project Timestamp, DeviceName, RegistryKey, RegistryValueName, RegistryValueData`
+      }
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      checkCache();
+      loadAllRules();
+    });
+
+    // Check cache status
+    function checkCache() {
+      const lastUpdate = localStorage.getItem('hunt_rules_updated');
+      const cacheStatus = document.getElementById('cache-status');
+      
+      if (lastUpdate) {
+        const age = Date.now() - parseInt(lastUpdate);
+        const hoursOld = Math.floor(age / (1000 * 60 * 60));
+        
+        if (age < CACHE_DURATION) {
+          cacheStatus.textContent = `CACHED (${hoursOld}h old)`;
+          document.getElementById('last-update').textContent = `Last update: ${hoursOld}h ago`;
+        } else {
+          cacheStatus.textContent = 'CACHE EXPIRED';
+          document.getElementById('last-update').textContent = 'Cache expired - update recommended';
+        }
+      } else {
+        cacheStatus.textContent = 'NO CACHE';
+        document.getElementById('last-update').textContent = 'Never updated - click UPDATE ALL RULES';
+      }
+    }
+
+    // Load all rules from cache or fetch
+    async function loadAllRules() {
+      const categories = ['rmm', 'filesharing', 'powershell', 'credentials', 'lateral', 'persistence'];
+      const vendors = ['sigma', 'splunk', 'elastic'];
+      
+      let ruleCount = 0;
+
+      for (const category of categories) {
+        // Load vendor rules
+        for (const vendor of vendors) {
+          const cached = localStorage.getItem(`rule_${category}_${vendor}`);
+          if (cached) {
+            document.getElementById(`${category}-${vendor}-content`).textContent = cached;
+            ruleCount++;
+          } else {
+            await fetchRule(category, vendor);
+            ruleCount++;
+          }
+        }
+
+        // Load Falcon fallback rules (always local)
+        const falconContent = document.getElementById(`${category}-falcon-content`);
+        if (falconContent && FALLBACK_RULES.falcon[category]) {
+          falconContent.textContent = FALLBACK_RULES.falcon[category];
+          ruleCount++;
+        }
+
+        // Sentinel (using curated KQL)
+        const sentinelContent = document.getElementById(`${category}-sentinel-content`);
+        if (sentinelContent) {
+          sentinelContent.textContent = generateSentinelRule(category);
+          ruleCount++;
+        }
+      }
+
+      document.getElementById('rule-count').textContent = `${ruleCount} RULES LOADED`;
+    }
+
+    // Fetch rule from GitHub
+    async function fetchRule(category, vendor) {
+      const url = RULE_SOURCES[vendor]?.[category];
+      if (!url) return;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const content = await response.text();
+        document.getElementById(`${category}-${vendor}-content`).textContent = content;
+        localStorage.setItem(`rule_${category}_${vendor}`, content);
+      } catch (error) {
+        console.error(`Failed to fetch ${vendor} rule for ${category}:`, error);
+        const element = document.getElementById(`${category}-${vendor}-content`);
+        element.textContent = `# Failed to load from GitHub\n# Error: ${error.message}\n# Using cached/fallback content if available`;
+      }
+    }
+
+    // Generate basic Sentinel KQL rule
+    function generateSentinelRule(category) {
+      const templates = {
+        rmm: `// Remote Access Tool Detection
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4688
+| where Process has_any ("anydesk.exe", "teamviewer.exe", "screenconnect.exe")
+| project TimeGenerated, Computer, Account, Process, CommandLine`,
+        filesharing: `// File Sharing Detection
+DeviceNetworkEvents
+| where RemoteUrl has_any ("dropbox.com", "drive.google.com", "mega.nz")
+| where ActionType == "ConnectionSuccess"
+| project Timestamp, DeviceName, RemoteUrl, InitiatingProcessFileName`,
+        powershell: `// PowerShell Suspicious Activity
+DeviceProcessEvents
+| where FileName =~ "powershell.exe"
+| where ProcessCommandLine has_any ("-enc", "-nop", "invoke-expression")
+| project Timestamp, DeviceName, ProcessCommandLine`,
+        credentials: `// Credential Dumping Detection
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("procdump", "mimikatz", "pwdump")
+| or CommandLine has "lsass"
+| project TimeGenerated, Computer, Account, Process, CommandLine`,
+        lateral: `// Lateral Movement Detection
+SecurityEvent
+| where EventID == 4624
+| where LogonType in (3, 10)
+| where IpAddress !startswith "10."
+| project TimeGenerated, Computer, Account, IpAddress, LogonType`,
+        persistence: `// Persistence Detection
+SecurityEvent
+| where EventID in (4657, 4663)
+| where ObjectName has_any ("Run", "RunOnce", "Startup")
+| project TimeGenerated, Computer, Account, ObjectName, ObjectValueName`
+      };
+      return templates[category] || '// Rule template not available';
+    }
+
+    // Update all rules
+    async function updateAllRules() {
+      const button = document.getElementById('update-btn-text');
+      button.innerHTML = 'UPDATING... <span class="loader"></span>';
+      document.getElementById('cache-status').textContent = 'UPDATING...';
+
+      const categories = ['rmm', 'filesharing', 'powershell', 'credentials', 'lateral', 'persistence'];
+      const vendors = ['sigma', 'splunk', 'elastic'];
+
+      for (const category of categories) {
+        for (const vendor of vendors) {
+          await fetchRule(category, vendor);
+        }
+      }
+
+      localStorage.setItem('hunt_rules_updated', Date.now().toString());
+      
+      button.textContent = 'UPDATE COMPLETE!';
+      setTimeout(() => {
+        button.textContent = 'UPDATE ALL RULES';
+      }, 2000);
+
+      checkCache();
+    }
+
+    // Clear cache
+    function clearCache() {
+      if (confirm('Clear all cached rules? You will need to update from GitHub again.')) {
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.startsWith('rule_') || key === 'hunt_rules_updated') {
+            localStorage.removeItem(key);
+          }
+        });
+        document.getElementById('cache-status').textContent = 'CACHE CLEARED';
+        document.getElementById('last-update').textContent = 'Cache cleared - update required';
+        alert('Cache cleared! Click UPDATE ALL RULES to fetch fresh detection rules.');
+      }
+    }
+
+    // Show hunt category
     function showHunt(huntId) {
-      // Hide all content sections
       const sections = document.getElementsByClassName('hunt-content-section');
       for (let section of sections) {
         section.classList.remove('active');
       }
       
-      // Remove active from all menu items
       const menuItems = document.getElementsByClassName('hunt-menu-item');
       for (let item of menuItems) {
         item.classList.remove('active');
       }
       
-      // Show selected section and activate menu item
       document.getElementById(huntId).classList.add('active');
       event.currentTarget.classList.add('active');
     }
 
-    // Toggle sub-sections
-    function toggleSub(element) {
-      element.classList.toggle('active');
-      const content = element.nextElementSibling;
-      content.classList.toggle('active');
-      
-      // Change arrow
-      const arrow = element.querySelector('.prompt');
-      if (content.classList.contains('active')) {
-        arrow.textContent = '▼';
-      } else {
-        arrow.textContent = '▶';
+    // Switch vendor tab
+    function switchVendor(element, category, vendor) {
+      // Update tabs
+      const tabs = element.parentElement.getElementsByClassName('vendor-tab');
+      for (let tab of tabs) {
+        tab.classList.remove('active');
       }
+      element.classList.add('active');
+
+      // Update content
+      const contents = element.parentElement.parentElement.getElementsByClassName('vendor-content');
+      for (let content of contents) {
+        content.classList.remove('active');
+      }
+      document.getElementById(`${category}-${vendor}`).classList.add('active');
     }
 
     // Copy code to clipboard
