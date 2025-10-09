@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULT 4624 - Phishing Intelligence</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .phishing-dashboard {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .stats-panel {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--main-color);
+      box-shadow: 0 0 15px rgba(74, 250, 154, 0.2);
+    }
+
+    .stat-number {
+      font-size: 2.5em;
+      color: var(--main-color);
+      font-weight: bold;
+      text-shadow: 0 0 10px rgba(74, 250, 154, 0.5);
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      color: var(--dim-color);
+      margin-top: 5px;
+    }
+
+    .filter-panel {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+    }
+
+    .filter-section {
+      margin-bottom: 20px;
+    }
+
+    .filter-title {
+      color: var(--main-color);
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .keyword-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      padding: 10px;
+      font-family: 'VT323', monospace;
+      font-size: 1em;
+      margin-bottom: 10px;
+    }
+
+    .keyword-input:focus {
+      outline: none;
+      border-color: var(--main-color);
+      box-shadow: 0 0 8px rgba(74, 250, 154, 0.3);
+    }
+
+    .theme-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .theme-tag {
+      padding: 6px 12px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9em;
+    }
+
+    .theme-tag:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.2);
+    }
+
+    .theme-tag.active {
+      background: var(--main-color);
+      color: var(--bg-color);
+      border-color: var(--main-color);
+    }
+
+    .source-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 2px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .source-toggle:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+    }
+
+    .source-toggle.active {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.15);
+    }
+
+    .feed-container {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      max-height: 800px;
+      overflow-y: auto;
+    }
+
+    .feed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--dim-color);
+    }
+
+    .feed-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-btn {
+      padding: 8px 15px;
+      background: transparent;
+      border: 1px solid var(--main-color);
+      color: var(--main-color);
+      cursor: pointer;
+      font-family: 'VT323', monospace;
+      font-size: 0.9em;
+      transition: all 0.3s;
+    }
+
+    .control-btn:hover {
+      background: var(--main-color);
+      color: var(--bg-color);
+    }
+
+    .threat-item {
+      background: rgba(74, 250, 154, 0.03);
+      border-left: 3px solid var(--dim-color);
+      padding: 15px;
+      margin-bottom: 15px;
+      transition: all 0.3s;
+    }
+
+    .threat-item:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.08);
+      transform: translateX(5px);
+    }
+
+    .threat-item.high-risk {
+      border-left-color: var(--error);
+    }
+
+    .threat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .threat-source {
+      color: var(--warning);
+      font-weight: bold;
+    }
+
+    .threat-time {
+      color: var(--dim-color);
+      font-size: 0.85em;
+    }
+
+    .threat-url {
+      color: var(--error);
+      word-break: break-all;
+      font-size: 0.95em;
+      margin: 8px 0;
+    }
+
+    .threat-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .threat-tag {
+      padding: 3px 8px;
+      background: rgba(255, 204, 0, 0.1);
+      border: 1px solid rgba(255, 204, 0, 0.3);
+      font-size: 0.8em;
+      color: var(--warning);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--dim-color);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--dim-color);
+      border-top-color: var(--main-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 968px) {
+      .phishing-dashboard {
+        grid-template-columns: 1fr;
+      }
+      .stats-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <!-- Navigation -->
+  <nav class="main-nav">
+    <div class="nav-brand">
+      VAULT_4624<span class="cursor"></span>
+    </div>
+    <div class="nav-links">
+      <a href="../index.html#phishing" class="nav-link">
+        <span class="prompt">&gt;</span> PHISHING INTEL
+      </a>
+      <a href="../index.html#hunts" class="nav-link">
+        <span class="prompt">&gt;</span> THREAT HUNTS
+      </a>
+      <a href="../index.html#resources" class="nav-link">
+        <span class="prompt">&gt;</span> RESOURCES
+      </a>
+      <a href="../index.html#about" class="nav-link">
+        <span class="prompt">&gt;</span> ABOUT
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>PHISHING INTELLIGENCE DASHBOARD</h1>
+    <p class="subtitle">Real-time threat feed from multiple OSINT sources</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success" id="feed-status"></span>
+        <span id="status-text">CONNECTING...</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        LIVE MONITORING
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        AUTO-REFRESH: 5MIN
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    
+    <!-- Statistics Panel -->
+    <div class="stats-panel">
+      <div class="stat-card">
+        <div class="stat-number" id="total-threats">0</div>
+        <div class="stat-label">TOTAL THREATS</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="urlhaus-count">0</div>
+        <div class="stat-label">URLHAUS</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="openphish-count">0</div>
+        <div class="stat-label">OPENPHISH</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="phishtank-count">0</div>
+        <div class="stat-label">PHISHTANK</div>
+      </div>
+    </div>
+
+    <!-- Dashboard Layout -->
+    <div class="phishing-dashboard">
+      
+      <!-- Left: Filters -->
+      <div class="filter-panel">
+        <h3 style="margin-bottom: 20px;">&gt;&gt; FILTERS</h3>
+        
+        <!-- Keyword Search -->
+        <div class="filter-section">
+          <div class="filter-title">KEYWORD SEARCH:</div>
+          <input type="text" class="keyword-input" id="keyword-filter" placeholder="e.g., paypal, microsoft, banking...">
+        </div>
+
+        <!-- Theme Filters -->
+        <div class="filter-section">
+          <div class="filter-title">THEMES:</div>
+          <div class="theme-filter">
+            <div class="theme-tag" onclick="toggleTheme(this, 'banking')">Banking</div>
+            <div class="theme-tag" onclick="toggleTheme(this, 'microsoft')">Microsoft</div>
+            <div class="theme-tag" onclick="toggleTheme(this, 'paypal')">PayPal</div>
+            <div class="theme-tag" onclick="toggleTheme(this, 'amazon')">Amazon</div>
+            <div class="theme-tag" onclick="toggleTheme(this, 'apple')">Apple</div>
+            <div class="theme-tag" onclick="toggleTheme(this, 'crypto')">Crypto</div>
+            <div class="theme-tag" onclick="toggleTheme(this, 'google')">Google</div>
+            <div class="theme-tag" onclick="toggleTheme(this, 'adobe')">Adobe</div>
+          </div>
+        </div>
+
+        <!-- Source Toggle -->
+        <div class="filter-section">
+          <div class="filter-title">SOURCES:</div>
+          <div class="source-toggle active" onclick="toggleSource(this, 'urlhaus')">
+            <span class="status-indicator success"></span> URLhaus
+          </div>
+          <div class="source-toggle active" onclick="toggleSource(this, 'openphish')">
+            <span class="status-indicator success"></span> OpenPhish
+          </div>
+          <div class="source-toggle active" onclick="toggleSource(this, 'phishtank')">
+            <span class="status-indicator warning"></span> PhishTank (Mock)
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="filter-section">
+          <div class="filter-title">ACTIONS:</div>
+          <button class="control-btn" onclick="clearFilters()" style="width: 100%; margin-bottom: 10px;">CLEAR FILTERS</button>
+          <button class="control-btn" onclick="exportThreats()" style="width: 100%;">EXPORT CSV</button>
+        </div>
+      </div>
+
+      <!-- Right: Live Feed -->
+      <div class="feed-container">
+        <div class="feed-header">
+          <h3>&gt;&gt; LIVE THREAT FEED</h3>
+          <div class="feed-controls">
+            <button class="control-btn" onclick="refreshFeed()">REFRESH</button>
+            <button class="control-btn" onclick="pauseFeed()" id="pause-btn">PAUSE</button>
+          </div>
+        </div>
+        
+        <div id="threats-feed">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading threat intelligence...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 PHISHING INTELLIGENCE</p>
+      <p>Data sources: URLhaus, OpenPhish, PhishTank</p>
+      <p style="margin-top: 10px;"><a href="../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script>
+    let allThreats = [];
+    let filteredThreats = [];
+    let activeThemes = [];
+    let activeSources = ['urlhaus', 'openphish', 'phishtank'];
+    let isPaused = false;
+    let refreshInterval;
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      fetchAllThreats();
+      
+      // Auto-refresh every 5 minutes
+      refreshInterval = setInterval(() => {
+        if (!isPaused) {
+          fetchAllThreats();
+        }
+      }, 300000);
+
+      // Real-time keyword filtering
+      document.getElementById('keyword-filter').addEventListener('input', applyFilters);
+    });
+
+// Fetch threats from all sources
+async function fetchAllThreats() {
+  document.getElementById('status-text').textContent = 'FETCHING DATA...';
+  allThreats = [];
+
+  // Fetch URLhaus
+  await fetchURLhaus();
+  
+  // Fetch OpenPhish
+  await fetchOpenPhish();
+  
+  // Add mock PhishTank data
+  addMockPhishTank();
+
+  // Update display
+  updateStats();
+  applyFilters();
+  document.getElementById('status-text').textContent = 'FEED ACTIVE';
+}
+
+// Fetch from OpenPhish (separate function, not nested!)
+async function fetchOpenPhish() {
+  try {
+    const response = await fetch('https://raw.githubusercontent.com/openphish/public_feed/refs/heads/main/feed.txt');
+    const text = await response.text();
+    const urls = text.split('\n').filter(url => url.trim());
+    
+    urls.slice(0, 30).forEach(url => {
+      allThreats.push({
+        source: 'OpenPhish',
+        url: defangURL(url),
+        threat: 'phishing',
+        tags: detectTheme(url),
+        time: new Date().toLocaleTimeString(),
+        timestamp: new Date()
+      });
+    });
+  } catch (error) {
+    console.error('OpenPhish fetch failed:', error);
+  }
+}
+
+    // Fetch from OpenPhish
+    async function fetchOpenPhish() {
+      try {
+        const response = await fetch('https://openphish.com/feed.txt');
+        const text = await response.text();
+        const urls = text.split('\n').filter(url => url.trim());
+        
+        urls.slice(0, 30).forEach(url => {
+          allThreats.push({
+            source: 'OpenPhish',
+            url: defangURL(url),
+            threat: 'phishing',
+            tags: detectTheme(url),
+            time: new Date().toLocaleTimeString(),
+            timestamp: new Date()
+          });
+        });
+      } catch (error) {
+        console.error('OpenPhish fetch failed:', error);
+      }
+    }
+
+    // Add mock PhishTank data
+    function addMockPhishTank() {
+      const mockData = [
+        { url: 'https://secure-paypal-verify.com/login', tags: ['paypal', 'banking'] },
+        { url: 'https://microsoft-account-security.net/verify', tags: ['microsoft'] },
+        { url: 'https://amazon-account-update.com/signin', tags: ['amazon'] },
+        { url: 'https://apple-id-verification.live/secure', tags: ['apple'] },
+        { url: 'https://chase-bank-secure.net/login', tags: ['banking'] }
+      ];
+
+      mockData.forEach(item => {
+        allThreats.push({
+          source: 'PhishTank',
+          url: defangURL(item.url),
+          threat: 'phishing',
+          tags: item.tags,
+          time: new Date().toLocaleTimeString(),
+          timestamp: new Date()
+        });
+      });
+    }
+
+    // Defang URLs for safe display
+    function defangURL(url) {
+      return url.replace(/https?:\/\//gi, 'hxxp://').replace(/\./g, '[.]');
+    }
+
+    // Detect theme from URL
+    function detectTheme(url) {
+      const themes = [];
+      const urlLower = url.toLowerCase();
+      
+      if (urlLower.match(/paypal|payment/)) themes.push('paypal');
+      if (urlLower.match(/microsoft|office|outlook|365/)) themes.push('microsoft');
+      if (urlLower.match(/amazon|amzn/)) themes.push('amazon');
+      if (urlLower.match(/apple|icloud|itunes/)) themes.push('apple');
+      if (urlLower.match(/bank|chase|wells|citi|hsbc/)) themes.push('banking');
+      if (urlLower.match(/crypto|bitcoin|wallet|coinbase/)) themes.push('crypto');
+      if (urlLower.match(/google|gmail|drive/)) themes.push('google');
+      if (urlLower.match(/adobe|creative/)) themes.push('adobe');
+      
+      return themes;
+    }
+
+    // Apply all filters
+    function applyFilters() {
+      const keyword = document.getElementById('keyword-filter').value.toLowerCase();
+      
+      filteredThreats = allThreats.filter(threat => {
+        // Source filter
+        if (!activeSources.includes(threat.source.toLowerCase())) return false;
+        
+        // Theme filter
+        if (activeThemes.length > 0) {
+          const hasTheme = threat.tags.some(tag => activeThemes.includes(tag));
+          if (!hasTheme) return false;
+        }
+        
+        // Keyword filter
+        if (keyword) {
+          const matchesKeyword = threat.url.toLowerCase().includes(keyword) ||
+                                threat.tags.some(tag => tag.includes(keyword));
+          if (!matchesKeyword) return false;
+        }
+        
+        return true;
+      });
+
+      displayThreats();
+    }
+
+    // Display threats
+    function displayThreats() {
+      const feedDiv = document.getElementById('threats-feed');
+      
+      if (filteredThreats.length === 0) {
+        feedDiv.innerHTML = '<div class="loading"><p>No threats match current filters</p></div>';
+        return;
+      }
+
+      // Sort by timestamp
+      filteredThreats.sort((a, b) => b.timestamp - a.timestamp);
+
+      feedDiv.innerHTML = filteredThreats.map(threat => `
+        <div class="threat-item ${threat.threat === 'malware' ? 'high-risk' : ''}">
+          <div class="threat-header">
+            <span class="threat-source">[${threat.source}]</span>
+            <span class="threat-time">${threat.time}</span>
+          </div>
+          <div class="threat-url">${threat.url}</div>
+          <div class="threat-tags">
+            ${threat.tags.map(tag => `<span class="threat-tag">${tag}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Update statistics
+    function updateStats() {
+      document.getElementById('total-threats').textContent = allThreats.length;
+      document.getElementById('urlhaus-count').textContent = allThreats.filter(t => t.source === 'URLhaus').length;
+      document.getElementById('openphish-count').textContent = allThreats.filter(t => t.source === 'OpenPhish').length;
+      document.getElementById('phishtank-count').textContent = allThreats.filter(t => t.source === 'PhishTank').length;
+    }
+
+    // Toggle theme filter
+    function toggleTheme(element, theme) {
+      element.classList.toggle('active');
+      
+      if (activeThemes.includes(theme)) {
+        activeThemes = activeThemes.filter(t => t !== theme);
+      } else {
+        activeThemes.push(theme);
+      }
+      
+      applyFilters();
+    }
+
+    // Toggle source
+    function toggleSource(element, source) {
+      element.classList.toggle('active');
+      
+      if (activeSources.includes(source)) {
+        activeSources = activeSources.filter(s => s !== source);
+      } else {
+        activeSources.push(source);
+      }
+      
+      applyFilters();
+    }
+
+    // Clear all filters
+    function clearFilters() {
+      activeThemes = [];
+      document.querySelectorAll('.theme-tag').forEach(tag => tag.classList.remove('active'));
+      document.getElementById('keyword-filter').value = '';
+      applyFilters();
+    }
+
+    // Refresh feed
+    function refreshFeed() {
+      fetchAllThreats();
+    }
+
+    // Pause/Resume feed
+    function pauseFeed() {
+      isPaused = !isPaused;
+      document.getElementById('pause-btn').textContent = isPaused ? 'RESUME' : 'PAUSE';
+    }
+
+    // Export to CSV
+    function exportThreats() {
+      const csv = [
+        ['Source', 'URL', 'Threat Type', 'Tags', 'Time'],
+        ...filteredThreats.map(t => [
+          t.source,
+          t.url,
+          t.threat,
+          t.tags.join(';'),
+          t.time
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `phishing_threats_${Date.now()}.csv`;
+      a.click();
+    }
+  </script>
+</body>
+</html>
