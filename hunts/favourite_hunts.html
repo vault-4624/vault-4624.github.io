@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULT 4624 - Threat Hunting Overview</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <style>
+    .hunt-container {
+      display: flex;
+      gap: 0;
+      max-width: 1400px;
+      margin: 0 auto;
+      min-height: 70vh;
+    }
+
+    .hunt-sidebar {
+      width: 350px;
+      min-width: 350px;
+      border-right: 1px solid var(--dim-color);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .hunt-menu-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      color: var(--main-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hunt-menu-item:hover {
+      background: var(--hover-bg);
+      padding-left: 25px;
+    }
+
+    .hunt-menu-item.active {
+      background: var(--hover-bg);
+      border-left: 3px solid var(--main-color);
+    }
+
+    .hunt-content-area {
+      flex: 1;
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+    }
+
+    .hunt-content-section {
+      display: none;
+    }
+
+    .hunt-content-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .sub-collapsible {
+      margin: 20px 0;
+      padding: 12px;
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 2px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .sub-collapsible:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+    }
+
+    .sub-collapsible.active {
+      border-left-color: var(--main-color);
+    }
+
+    .sub-content {
+      display: none;
+      margin-top: 15px;
+      padding-left: 15px;
+    }
+
+    .sub-content.active {
+      display: block;
+    }
+
+    @media (max-width: 968px) {
+      .hunt-container {
+        flex-direction: column;
+      }
+      .hunt-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--dim-color);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <!-- Main Navigation -->
+  <nav class="main-nav">
+    <div class="nav-brand">
+      VAULT_4624<span class="cursor"></span>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html#phishing" class="nav-link">
+        <span class="prompt">&gt;</span> PHISHING INTEL
+      </a>
+      <a href="../../index.html#hunts" class="nav-link">
+        <span class="prompt">&gt;</span> THREAT HUNTS
+      </a>
+      <a href="../../index.html#resources" class="nav-link">
+        <span class="prompt">&gt;</span> RESOURCES
+      </a>
+      <a href="../../index.html#about" class="nav-link">
+        <span class="prompt">&gt;</span> ABOUT
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>THREAT HUNTING METHODOLOGIES</h1>
+    <p class="subtitle">Common attack behaviors, key indicators & detection queries</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        HUNT DATABASE LOADED
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        MITRE ATT&CK MAPPED
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        QUERIES READY
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    <h2 class="section-header">
+      <span class="prompt">&gt;&gt;</span> SELECT HUNT CATEGORY
+    </h2>
+    
+    <div class="hunt-container">
+      <!-- Left Sidebar Menu -->
+      <div class="hunt-sidebar">
+        <div class="hunt-menu-item active" onclick="showHunt('home')">
+          <span class="prompt">&gt;</span> [ HOME ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('rmm')">
+          <span class="prompt">&gt;</span> [ REMOTE MONITORING & MANAGEMENT SOFTWARE ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('filesharing')">
+          <span class="prompt">&gt;</span> [ FILESHARING SOFTWARE ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('remote')">
+          <span class="prompt">&gt;</span> [ REMOTE LOGIN & EXTERNAL ADDRESSES ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('netexe')">
+          <span class="prompt">&gt;</span> [ EXPLOITATION OF NET.EXE ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('outbound')">
+          <span class="prompt">&gt;</span> [ OUTBOUND SSH, SFTP & FTP ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('bytes')">
+          <span class="prompt">&gt;</span> [ LARGE OUTBOUND BYTES ]
+        </div>
+      </div>
+
+      <!-- Right Content Area -->
+      <div class="hunt-content-area">
+        
+        <!-- HOME CONTENT -->
+        <div id="home" class="hunt-content-section active">
+          <h3>&gt;&gt; HOME</h3>
+          <br/>
+          <p>The following options provide valuable insight into potential security threats and vulnerabilities within a network. Each category includes:</p>
+          <br/>
+          <ul>
+            <li>MITRE ATT&CK framework mappings</li>
+            <li>Detection queries for multiple platforms</li>
+            <li>Indicators of compromise (IOCs)</li>
+            <li>Real-world hunting scenarios</li>
+          </ul>
+          <br/>
+          <p>Select a category from the menu to begin your threat hunt.</p>
+        </div>
+
+        <!-- RMM SOFTWARE CONTENT -->
+        <div id="rmm" class="hunt-content-section">
+          <h3>&gt;&gt; REMOTE MONITORING & MANAGEMENT SOFTWARE</h3>
+          <br/>
+          <h4>&gt;&gt; CONSIDER THIS</h4>
+          <br/>
+          <p>Remote Monitoring & Management (RMM) software enables IT professionals to remotely monitor, manage, and maintain IT systems and networks. Threat hunters should focus on detecting misuse of RMM tools by adversaries who exploit these tools for unauthorized access, persistence, and lateral movement.</p>
+          <br/>
+          <p><strong>ATT&CK Category:</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>Initial Access</li>
+            <li>Persistence</li>
+            <li>Privilege Escalation</li>
+            <li>Defense Evasion</li>
+          </ul>
+          <br/>
+          <p><strong>ATT&CK Tags:</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>Valid Accounts, T1078: Valid Accounts</li>
+            <li>Account Manipulation, T1098: Account Manipulation</li>
+            <li>Obfuscated Files or Information, T1027: Obfuscated Files or Information</li>
+          </ul>
+          <br/>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ ALL RMM SOFTWARE - DOMAINS & EXECUTABLES ]
+          </div>
+          <div class="sub-content">
+            <p>Please find below an exhaustive list of RMM software, and their corresponding domains and executables. Use these for your rules.</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code">- Access Remote PC:
+  - Executables: rpcgrab.exe, rpcsetup.exe
+
+- Action1:
+  - Domain: action1.com
+  - Executables: action1_agent.exe
+
+- AnyDesk:
+  - Domain: anydesk.com
+  - Executables: anydesk.exe
+
+- TeamViewer:
+  - Domain: teamviewer.com
+  - Executables: teamviewer.exe, tv_w32.exe, tv_x64.exe
+
+- ConnectWise Control:
+  - Domain: connectwise.com
+  - Executables: screenconnect.exe
+
+- LogMeIn:
+  - Domain: logmein.com
+  - Executables: logmein.exe, lmi_rescue.exe</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ SIGMA RULE ]
+          </div>
+          <div class="sub-content">
+            <p>The following SIGMA rule has been created with the help of online tooling and has not been tested within a corporate or sandboxed environment. Please use as a general framework.</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code">title: Suspicious RMM Software Execution
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith:
+      - '\\teamviewer.exe'
+      - '\\anydesk.exe'
+      - '\\screenconnect.exe'
+      - '\\logmein.exe'
+  condition: selection
+falsepositives:
+  - Legitimate use of RMM tools by IT staff
+level: medium</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
+          </div>
+          <div class="sub-content">
+            <p>The following FALCON rule has been created with the help of online tooling and has not been tested within a corporate or sandboxed environment. Please use as a general framework.</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code">DeviceProcessEvents
+| where FileName in~ ("teamviewer.exe", "anydesk.exe", "screenconnect.exe", "logmein.exe")
+| project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine
+| order by Timestamp desc</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILESHARING CONTENT -->
+        <div id="filesharing" class="hunt-content-section">
+          <h3>&gt;&gt; FILESHARING SOFTWARE</h3>
+          <br/>
+          <h4>&gt;&gt; CONSIDER THIS</h4>
+          <br/>
+          <p>Filesharing software facilitates the transfer and sharing of files across different systems and users. Within the MITRE ATT&CK framework, this software can be exploited by adversaries for a range of malicious activities including initial access, persistence, data exfiltration, and defense evasion.</p>
+          <br/>
+          <p>Threat hunters should be vigilant in monitoring the use of filesharing tools for signs of unauthorized access, unusual file transfer sizes, and patterns indicative of data exfiltration.</p>
+          <br/>
+          <p><strong>ATT&CK Category:</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>Initial Access</li>
+            <li>Persistence</li>
+            <li>Exfiltration</li>
+            <li>Defense Evasion</li>
+          </ul>
+          <br/>
+          <p><strong>ATT&CK Tags and IDs:</strong></p>
+          <ul style="margin-left: 20px;">
+            <li>T1078: Valid Accounts</li>
+            <li>T1030: Data Transfer Size Limits</li>
+            <li>T1567: Exfiltration Over Web Service</li>
+          </ul>
+          <br/>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ ALL FILESHARING SOFTWARE - DOMAINS & EXECUTABLES ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ SIGMA RULE ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- REMOTE LOGIN CONTENT -->
+        <div id="remote" class="hunt-content-section">
+          <h3>&gt;&gt; REMOTE LOGIN & EXTERNAL ADDRESSES</h3>
+          <br/>
+          <h4>&gt;&gt; CONSIDER THIS</h4>
+          <br/>
+          <p>Remote Login & External Addresses are critical areas for threat hunters to monitor due to their potential for enabling unauthorized access and facilitating cyber attacks. Remote login services allow users to access internal systems from outside the corporate network, making them attractive targets for attackers seeking to gain a foothold.</p>
+          <br/>
+          <p>Threat actors often exploit weak or compromised credentials to perform brute force or phishing attacks, allowing them to infiltrate networks undetected.</p>
+          <br/>
+          <p><strong>ATT&CK Category:</strong> Initial Access, Persistence, Privilege Escalation, Defense Evasion</p>
+          <p><strong>ATT&CK Tag:</strong> Valid Accounts</p>
+          <p><strong>ATT&CK ID:</strong> T1078</p>
+          <p><strong>Minimum Log Source Requirement:</strong> Windows</p>
+          <br/>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ SIGMA RULE ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- NET.EXE CONTENT -->
+        <div id="netexe" class="hunt-content-section">
+          <h3>&gt;&gt; EXPLOITATION OF NET.EXE</h3>
+          <br/>
+          <p>Exploitation of NET.EXE is a critical concern for threat hunters, especially when it involves the creation of user accounts. The NET.EXE command is a versatile and powerful utility in Windows environments, used for a variety of administrative tasks, including managing user accounts, services, and network resources.</p>
+          <br/>
+          <p>However, this same power makes it an attractive target for cyber attackers. If compromised, attackers can use NET.EXE to create unauthorized user accounts, often with administrative privileges, to gain persistent access to the network.</p>
+          <br/>
+          <p>Monitoring for unusual or suspicious use of NET.EXE, particularly for account creation, can help threat hunters identify and respond to unauthorized activities, preventing privilege escalation and maintaining the security of the network.</p>
+          <br/>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ SIGMA RULE ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- OUTBOUND CONTENT -->
+        <div id="outbound" class="hunt-content-section">
+          <h3>&gt;&gt; OUTBOUND SSH, SFTP & FTP TO EXTERNAL ADDRESSES</h3>
+          <br/>
+          <p>Outbound SSH, SFTP, and FTP to External Addresses are critical areas of focus for threat hunters due to their potential use in data exfiltration and unauthorized access. These protocols facilitate secure file transfer and remote access, but when used to connect to external addresses, they can be exploited by attackers to transfer sensitive data out of the organization or to establish remote control over compromised systems.</p>
+          <br/>
+          <p>Monitoring outbound SSH, SFTP, and FTP traffic helps threat hunters detect unusual or unauthorized connections, identify potential data breaches, and prevent malicious actors from maintaining external communication channels.</p>
+          <br/>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ SIGMA RULE ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- LARGE BYTES CONTENT -->
+        <div id="bytes" class="hunt-content-section">
+          <h3>&gt;&gt; LARGE OUTBOUND BYTES</h3>
+          <br/>
+          <p>Large Outbound Bytes are a significant concern for threat hunters as they can indicate data exfiltration or other unauthorized transfers of sensitive information. When unusually large amounts of data are being sent out of the network, it may suggest that an attacker is stealing valuable data, whether intellectual property, personal information, or proprietary business information.</p>
+          <br/>
+          <p>Monitoring for large outbound data transfers helps threat hunters detect and respond to potential breaches in real-time, mitigating the risk of data loss and maintaining the security of the organization's information assets.</p>
+          <br/>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ DETECTION INDICATORS ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ SIGMA RULE ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+
+          <div class="sub-collapsible" onclick="toggleSub(this)">
+            <span class="prompt">▼</span> [ CROWDSTRIKE - FALCON ]
+          </div>
+          <div class="sub-content">
+            <p>Content coming soon...</p>
+            <br/>
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code"># Content to be added</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 THREAT HUNTING METHODOLOGIES</p>
+      <p>Continuously updated with new detection techniques</p>
+      <p style="margin-top: 10px;"><a href="../../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Show selected hunt category
+    function showHunt(huntId) {
+      // Hide all content sections
+      const sections = document.getElementsByClassName('hunt-content-section');
+      for (let section of sections) {
+        section.classList.remove('active');
+      }
+      
+      // Remove active from all menu items
+      const menuItems = document.getElementsByClassName('hunt-menu-item');
+      for (let item of menuItems) {
+        item.classList.remove('active');
+      }
+      
+      // Show selected section and activate menu item
+      document.getElementById(huntId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Toggle sub-sections
+    function toggleSub(element) {
+      element.classList.toggle('active');
+      const content = element.nextElementSibling;
+      content.classList.toggle('active');
+      
+      // Change arrow
+      const arrow = element.querySelector('.prompt');
+      if (content.classList.contains('active')) {
+        arrow.textContent = '▼';
+      } else {
+        arrow.textContent = '▶';
+      }
+    }
+
+    // Copy code to clipboard
+    function copyToClipboard(button) {
+      const codeElement = button.nextElementSibling;
+      const textToCopy = codeElement.textContent;
+      
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        button.textContent = 'COPIED!';
+        setTimeout(() => {
+          button.textContent = 'COPY CODE';
+        }, 2000);
+      }, (err) => {
+        alert("Failed to copy: " + err);
+      });
+    }
+  </script>
+</body>
+</html>
