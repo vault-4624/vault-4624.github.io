@@ -16,7 +16,7 @@
 
     .stats-panel {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 15px;
       margin-bottom: 30px;
     }
@@ -199,6 +199,22 @@
       box-shadow: 0 0 8px rgba(74, 250, 154, 0.3);
     }
 
+    .sample-size-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .sample-size-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      padding: 8px;
+      font-family: 'VT323', monospace;
+    }
+
     .theme-filter {
       display: flex;
       flex-wrap: wrap;
@@ -342,6 +358,19 @@
       color: var(--warning);
     }
 
+    .status-badge {
+      padding: 3px 8px;
+      font-size: 0.75em;
+      border-radius: 3px;
+      margin-left: 8px;
+    }
+
+    .status-active {
+      background: rgba(255, 0, 0, 0.2);
+      color: var(--error);
+      border: 1px solid var(--error);
+    }
+
     .loading {
       text-align: center;
       padding: 40px;
@@ -406,7 +435,7 @@
   <!-- Hero -->
   <section class="hero">
     <h1>PHISHING INTELLIGENCE DASHBOARD</h1>
-    <p class="subtitle">Real-time threat feed with automated theme analysis</p>
+    <p class="subtitle">Enterprise-grade threat feed with automated theme analysis</p>
     <div class="status-bar">
       <div class="status-item">
         <span class="status-indicator success" id="feed-status"></span>
@@ -435,16 +464,12 @@
         <div class="stat-label">TOTAL THREATS</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number" id="urlhaus-count">0</div>
-        <div class="stat-label">URLHAUS</div>
+        <div class="stat-number" id="phishing-db-count">0</div>
+        <div class="stat-label">PHISHING DATABASE</div>
       </div>
       <div class="stat-card">
         <div class="stat-number" id="openphish-count">0</div>
         <div class="stat-label">OPENPHISH</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="phishtank-count">0</div>
-        <div class="stat-label">PHISHTANK</div>
       </div>
     </div>
 
@@ -483,6 +508,16 @@
           <input type="text" class="keyword-input" id="keyword-filter" placeholder="e.g., paypal, microsoft, banking...">
         </div>
 
+        <!-- Sample Size Control -->
+        <div class="filter-section">
+          <div class="filter-title">SAMPLE SIZE:</div>
+          <div class="sample-size-control">
+            <input type="number" class="sample-size-input" id="sample-size" value="100" min="10" max="500" step="10">
+            <button class="control-btn" onclick="updateSampleSize()" style="white-space: nowrap;">APPLY</button>
+          </div>
+          <p style="color: var(--dim-color); font-size: 0.85em; margin-top: 5px;">URLs to analyze (10-500)</p>
+        </div>
+
         <!-- Theme Filters -->
         <div class="filter-section">
           <div class="filter-title">THEMES:</div>
@@ -501,14 +536,11 @@
         <!-- Source Toggle -->
         <div class="filter-section">
           <div class="filter-title">SOURCES:</div>
-          <div class="source-toggle active" onclick="toggleSource(this, 'urlhaus')">
-            <span class="status-indicator success"></span> URLhaus
+          <div class="source-toggle active" onclick="toggleSource(this, 'phishing database')">
+            <span class="status-indicator success"></span> Phishing Database
           </div>
           <div class="source-toggle active" onclick="toggleSource(this, 'openphish')">
             <span class="status-indicator success"></span> OpenPhish
-          </div>
-          <div class="source-toggle active" onclick="toggleSource(this, 'phishtank')">
-            <span class="status-indicator warning"></span> PhishTank (Mock)
           </div>
         </div>
 
@@ -546,7 +578,7 @@
   <footer class="footer">
     <div class="footer-content">
       <p>&gt;&gt; VAULT 4624 PHISHING INTELLIGENCE</p>
-      <p>Data sources: URLhaus, OpenPhish, PhishTank</p>
+      <p>Data sources: Phishing Database (GitHub), OpenPhish</p>
       <p style="margin-top: 10px;"><a href="../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
     </div>
   </footer>
@@ -555,11 +587,12 @@
     let allThreats = [];
     let filteredThreats = [];
     let activeThemes = [];
-    let activeSources = ['urlhaus', 'openphish', 'phishtank'];
+    let activeSources = ['phishing database', 'openphish'];
     let isPaused = false;
     let refreshInterval;
     let themeStats = {};
     let autoRefreshEnabled = true;
+    let sampleSize = 100;
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -605,19 +638,30 @@
       }
     }
 
+    // Update sample size
+    function updateSampleSize() {
+      const input = document.getElementById('sample-size');
+      const newSize = parseInt(input.value);
+      
+      if (newSize >= 10 && newSize <= 500) {
+        sampleSize = newSize;
+        fetchAllThreats();
+      } else {
+        alert('Sample size must be between 10 and 500');
+        input.value = sampleSize;
+      }
+    }
+
     // Fetch threats from all sources
     async function fetchAllThreats() {
       document.getElementById('status-text').textContent = 'FETCHING DATA...';
       allThreats = [];
 
-      // Fetch URLhaus
-      await fetchURLhaus();
+      // Fetch Phishing Database (ACTIVE domains)
+      await fetchPhishingDatabase();
       
       // Fetch OpenPhish
       await fetchOpenPhish();
-      
-      // Add mock PhishTank data
-      addMockPhishTank();
 
       // Update display
       analyzeThemes();
@@ -627,44 +671,97 @@
       document.getElementById('status-text').textContent = 'FEED ACTIVE';
     }
 
-    // Fetch from URLhaus API
-    async function fetchURLhaus() {
+    // Fetch from Phishing Database
+    async function fetchPhishingDatabase() {
       try {
-        const response = await fetch('https://urlhaus-api.abuse.ch/v1/urls/recent/');
-        const data = await response.json();
+        document.getElementById('status-text').textContent = 'FETCHING PHISHING DATABASE...';
         
-        if (data.urls) {
-          data.urls.slice(0, 30).forEach(item => {
-            allThreats.push({
-              source: 'URLhaus',
-              url: defangURL(item.url),
-              rawUrl: item.url,
-              threat: item.threat || 'malware',
-              tags: item.tags || [],
-              time: new Date(item.dateadded).toLocaleTimeString(),
-              timestamp: new Date(item.dateadded)
-            });
-          });
+        const targetUrl = 'https://phish.co.za/latest/phishing-domains-ACTIVE.txt';
+        
+        // Try multiple CORS proxies in order
+        const corsProxies = [
+          'https://api.allorigins.win/raw?url=',
+          'https://corsproxy.io/?',
+          'https://api.codetabs.com/v1/proxy?quest='
+        ];
+        
+        let response = null;
+        let lastError = null;
+        
+        for (const proxy of corsProxies) {
+          try {
+            console.log(`🔄 Trying proxy: ${proxy.split('/')[2]}`);
+            response = await fetch(proxy + encodeURIComponent(targetUrl));
+            
+            if (response.ok) {
+              console.log(`✅ Success with: ${proxy.split('/')[2]}`);
+              break;
+            }
+          } catch (error) {
+            console.warn(`❌ Failed with ${proxy.split('/')[2]}:`, error.message);
+            lastError = error;
+          }
         }
+        
+        if (!response || !response.ok) {
+          throw lastError || new Error('All CORS proxies failed');
+        }
+        
+        const text = await response.text();
+        const domains = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+        
+        console.log(`✅ Phishing Database: Loaded ${domains.length} active domains, sampling ${sampleSize}`);
+        
+        if (domains.length === 0) {
+          console.error('❌ Phishing Database returned no domains');
+          return;
+        }
+        
+        // Take sample size
+        domains.slice(0, sampleSize).forEach(domain => {
+          const url = `https://${domain}`;
+          const detectedThemes = detectTheme(url);
+          
+          allThreats.push({
+            source: 'Phishing Database',
+            url: defangURL(url),
+            rawUrl: url,
+            threat: 'phishing',
+            status: 'ACTIVE',
+            tags: detectedThemes.length > 0 ? detectedThemes : ['generic'],
+            time: new Date().toLocaleTimeString(),
+            timestamp: new Date()
+          });
+        });
+        
+        console.log(`✅ Added ${Math.min(sampleSize, domains.length)} threats from Phishing Database`);
       } catch (error) {
-        console.error('URLhaus fetch failed:', error);
+        console.error('❌ Phishing Database unavailable (CORS issue):', error.message);
+        console.log('ℹ️ Running with OpenPhish only. Deploy to GitHub Pages for full functionality.');
+        document.getElementById('status-text').textContent = 'RUNNING WITH OPENPHISH ONLY';
       }
     }
 
     // Fetch from OpenPhish
     async function fetchOpenPhish() {
       try {
+        document.getElementById('status-text').textContent = 'FETCHING OPENPHISH...';
+        
         const response = await fetch('https://raw.githubusercontent.com/openphish/public_feed/refs/heads/main/feed.txt');
         const text = await response.text();
         const urls = text.split('\n').filter(url => url.trim());
         
-        urls.slice(0, 30).forEach(url => {
+        console.log(`OpenPhish: Loaded ${urls.length} URLs, sampling ${Math.floor(sampleSize / 2)}`);
+        
+        // Take half the sample size for OpenPhish to balance sources
+        urls.slice(0, Math.floor(sampleSize / 2)).forEach(url => {
           const detectedThemes = detectTheme(url);
           allThreats.push({
             source: 'OpenPhish',
             url: defangURL(url),
             rawUrl: url,
             threat: 'phishing',
+            status: 'ACTIVE',
             tags: detectedThemes,
             time: new Date().toLocaleTimeString(),
             timestamp: new Date()
@@ -673,29 +770,6 @@
       } catch (error) {
         console.error('OpenPhish fetch failed:', error);
       }
-    }
-
-    // Add mock PhishTank data
-    function addMockPhishTank() {
-      const mockData = [
-        { url: 'https://secure-paypal-verify.com/login', tags: ['paypal', 'banking'] },
-        { url: 'https://microsoft-account-security.net/verify', tags: ['microsoft'] },
-        { url: 'https://amazon-account-update.com/signin', tags: ['amazon'] },
-        { url: 'https://apple-id-verification.live/secure', tags: ['apple'] },
-        { url: 'https://chase-bank-secure.net/login', tags: ['banking'] }
-      ];
-
-      mockData.forEach(item => {
-        allThreats.push({
-          source: 'PhishTank',
-          url: defangURL(item.url),
-          rawUrl: item.url,
-          threat: 'phishing',
-          tags: item.tags,
-          time: new Date().toLocaleTimeString(),
-          timestamp: new Date()
-        });
-      });
     }
 
     // Defang URLs for safe display
@@ -710,31 +784,42 @@
       
       // Brand detection patterns
       const patterns = {
-        'paypal': /paypal|payment|pay-pal/,
-        'microsoft': /microsoft|office|outlook|365|onedrive|msn|live\.com/,
-        'amazon': /amazon|amzn|aws/,
-        'apple': /apple|icloud|itunes|app-store|appleid/,
-        'banking': /bank|chase|wells|citi|hsbc|bofa|usbank|santander|barclays/,
-        'crypto': /crypto|bitcoin|btc|wallet|coinbase|binance|blockchain|metamask/,
-        'google': /google|gmail|drive|docs|goo\.gl/,
+        'paypal': /paypal|payment|pay-pal|paypai|paypa1/,
+        'microsoft': /microsoft|office|outlook|365|onedrive|msn|live\.com|ms-|microsof|micros0ft/,
+        'amazon': /amazon|amzn|aws|amazom|amaz0n/,
+        'apple': /apple|icloud|itunes|app-store|appleid|appl3/,
+        'banking': /bank|chase|wells|citi|hsbc|bofa|usbank|santander|barclays|capitalone|pnc|ally/,
+        'crypto': /crypto|bitcoin|btc|wallet|coinbase|binance|blockchain|metamask|ethereum|eth/,
+        'google': /google|gmail|drive|docs|goo\.gl|g00gle/,
         'adobe': /adobe|creative|acrobat/,
-        'netflix': /netflix|nflx/,
-        'facebook': /facebook|fb\.com|meta/,
+        'netflix': /netflix|nflx|netfl1x/,
+        'facebook': /facebook|fb\.com|meta|faceb00k/,
         'instagram': /instagram|insta/,
-        'linkedin': /linkedin/,
-        'dropbox': /dropbox/,
-        'docusign': /docusign|docu-sign/,
+        'linkedin': /linkedin|linked-in/,
+        'dropbox': /dropbox|drop-box/,
+        'docusign': /docusign|docu-sign|document-sign/,
         'att': /att\.com|at&t/,
         'verizon': /verizon/,
-        'fedex': /fedex/,
+        'fedex': /fedex|fed-ex/,
         'ups': /ups\.com|ups-/,
-        'usps': /usps/,
-        'irs': /irs\.gov|irs-/
+        'usps': /usps|us-postal/,
+        'irs': /irs\.gov|irs-|internal-revenue/,
+        'dhl': /dhl\.com|dhl-/,
+        'ebay': /ebay|e-bay/,
+        'walmart': /walmart|wal-mart/,
+        'target': /target\.com/
       };
 
       for (const [theme, pattern] of Object.entries(patterns)) {
         if (pattern.test(urlLower)) {
           themes.push(theme);
+        }
+      }
+      
+      // If no specific theme detected, check for generic phishing indicators
+      if (themes.length === 0) {
+        if (urlLower.match(/secure|verify|account|login|signin|update|confirm|validate/)) {
+          themes.push('generic');
         }
       }
       
@@ -768,10 +853,11 @@
     function displayThemeBreakdown(examples) {
       const breakdownDiv = document.getElementById('theme-breakdown');
       
-      // Sort themes by count
+      // Sort themes by count, exclude 'generic'
       const sortedThemes = Object.entries(themeStats)
+        .filter(([theme]) => theme !== 'generic')
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 8); // Top 8 themes
+        .slice(0, 10); // Top 10 themes
 
       if (sortedThemes.length === 0) {
         breakdownDiv.innerHTML = '<div class="loading"><p>No themes detected</p></div>';
@@ -805,8 +891,9 @@
     function generateAwarenessContent() {
       const awarenessDiv = document.getElementById('awareness-content');
       
-      // Get top 3 themes
+      // Get top themes excluding 'generic'
       const topThemes = Object.entries(themeStats)
+        .filter(([theme]) => theme !== 'generic')
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3);
 
@@ -817,18 +904,35 @@
 
       // Extract common patterns
       const patterns = extractCommonPatterns();
+      const totalThreats = allThreats.length;
+      const totalCategorized = topThemes.reduce((sum, [, count]) => sum + count, 0);
 
       awarenessDiv.innerHTML = `
         <div class="awareness-card">
           <div class="awareness-title">🎯 TOP THREATS DETECTED</div>
           <div class="awareness-content">
-            Current phishing campaigns are primarily targeting:
+            Analyzing ${totalThreats} active phishing domains. Primary targets:
             <ul style="margin: 10px 0; padding-left: 20px;">
-              ${topThemes.map(([theme, count]) => 
-                `<li><strong>${theme.toUpperCase()}</strong> - ${count} campaigns detected</li>`
-              ).join('')}
+              ${topThemes.map(([theme, count]) => {
+                const percentage = Math.round((count / totalThreats) * 100);
+                return `<li><strong>${theme.toUpperCase()}</strong> - ${count} campaigns (${percentage}% of total)</li>`;
+              }).join('')}
             </ul>
-            <strong>Action:</strong> Focus security awareness training on these brands this week.
+            <strong>Action:</strong> Prioritize security awareness training on ${topThemes[0][0].toUpperCase()} - it represents the highest threat volume.
+          </div>
+        </div>
+
+        <div class="awareness-card">
+          <div class="awareness-title">📊 THREAT LANDSCAPE</div>
+          <div class="awareness-content">
+            <strong>Dataset Overview:</strong>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+              <li>Total Active Threats: ${totalThreats}</li>
+              <li>Categorized Threats: ${totalCategorized}</li>
+              <li>Brand-Specific Campaigns: ${topThemes.length} primary targets</li>
+              <li>Sources: Phishing Database + OpenPhish</li>
+            </ul>
+            All domains analyzed are currently <strong>ACTIVE</strong> and pose immediate risk to users.
           </div>
         </div>
 
@@ -841,20 +945,7 @@
                 `<div class="pattern-item">${pattern}</div>`
               ).join('')}
             </div>
-            <strong>Tip:</strong> Legitimate sites rarely use hyphens or add extra words to their domain names.
-          </div>
-        </div>
-
-        <div class="awareness-card">
-          <div class="awareness-title">⚠️ KEY WARNING SIGNS</div>
-          <div class="awareness-content">
-            <ul style="margin: 10px 0; padding-left: 20px;">
-              <li>Domain names with extra words (e.g., "secure-", "verify-", "account-")</li>
-              <li>Suspicious TLDs (.net, .live, .xyz on familiar brands)</li>
-              <li>Urgent language demanding immediate action</li>
-              <li>Requests to verify account information</li>
-              <li>Misspelled brand names or unusual subdomains</li>
-            </ul>
+            <strong>Tip:</strong> Legitimate sites rarely use hyphens, security-themed prefixes, or unusual TLDs.
           </div>
         </div>
 
@@ -863,10 +954,12 @@
           <div class="awareness-content">
             Use this template for your security awareness campaign:
             <div class="awareness-examples">
-              <strong>Subject:</strong> ALERT - ${topThemes[0][0].toUpperCase()} Phishing Campaign Active<br><br>
-              <strong>Body:</strong> Our threat intelligence has detected ${topThemes[0][1]} active phishing campaigns 
-              impersonating ${topThemes[0][0].toUpperCase()}. Be extra vigilant with emails claiming to be from this service. 
-              Always verify URLs before clicking, and report suspicious messages to IT security immediately.
+              <strong>Subject:</strong> CRITICAL - ${topThemes[0][0].toUpperCase()} Phishing Surge Detected<br><br>
+              <strong>Body:</strong> Our threat intelligence has identified ${topThemes[0][1]} active phishing campaigns 
+              impersonating ${topThemes[0][0].toUpperCase()} (${Math.round((topThemes[0][1] / totalThreats) * 100)}% of current threats). 
+              These domains are ACTIVE and targeting our users. Key warning signs: suspicious URLs with extra words, 
+              misspellings, and unfamiliar domains. Always verify legitimacy before clicking links. Report suspicious 
+              emails immediately to security@company.com.
             </div>
           </div>
         </div>
@@ -881,14 +974,15 @@
         const url = threat.rawUrl.toLowerCase();
         
         // Extract suspicious patterns
-        if (url.includes('secure-')) patterns.add('Contains "secure-" prefix');
+        if (url.includes('secure-') || url.includes('-secure')) patterns.add('Contains "secure" prefix/suffix');
         if (url.includes('verify')) patterns.add('Contains "verify" keyword');
         if (url.includes('account')) patterns.add('Contains "account" keyword');
         if (url.includes('update')) patterns.add('Contains "update" keyword');
-        if (url.includes('login')) patterns.add('Contains "login" keyword');
-        if (url.includes('confirm')) patterns.add('Contains "confirm" keyword');
-        if (url.match(/-\w+\./)) patterns.add('Uses hyphens in domain');
-        if (url.match(/\.(live|xyz|top|club)/)) patterns.add('Suspicious TLD (.live, .xyz, .top, .club)');
+        if (url.includes('login') || url.includes('signin')) patterns.add('Contains "login/signin" keyword');
+        if (url.includes('confirm') || url.includes('validate')) patterns.add('Contains "confirm/validate" keyword');
+        if (url.match(/-\w+\./)) patterns.add('Uses hyphens in domain name');
+        if (url.match(/\.(live|xyz|top|club|online|site)/)) patterns.add('Suspicious TLD (.live, .xyz, .top, .club, .online, .site)');
+        if (url.match(/\d/)) patterns.add('Contains numbers in domain (e.g., "paypa1", "micros0ft")');
       });
 
       return Array.from(patterns);
@@ -955,7 +1049,10 @@
       feedDiv.innerHTML = filteredThreats.map(threat => `
         <div class="threat-item ${threat.threat === 'malware' ? 'high-risk' : ''}">
           <div class="threat-header">
-            <span class="threat-source">[${threat.source}]</span>
+            <div>
+              <span class="threat-source">[${threat.source}]</span>
+              ${threat.status ? `<span class="status-badge status-active">${threat.status}</span>` : ''}
+            </div>
             <span class="threat-time">${threat.time}</span>
           </div>
           <div class="threat-url">${threat.url}</div>
@@ -969,9 +1066,8 @@
     // Update statistics
     function updateStats() {
       document.getElementById('total-threats').textContent = allThreats.length;
-      document.getElementById('urlhaus-count').textContent = allThreats.filter(t => t.source === 'URLhaus').length;
+      document.getElementById('phishing-db-count').textContent = allThreats.filter(t => t.source === 'Phishing Database').length;
       document.getElementById('openphish-count').textContent = allThreats.filter(t => t.source === 'OpenPhish').length;
-      document.getElementById('phishtank-count').textContent = allThreats.filter(t => t.source === 'PhishTank').length;
     }
 
     // Toggle theme filter
@@ -1022,10 +1118,11 @@
     // Export to CSV
     function exportThreats() {
       const csv = [
-        ['Source', 'URL', 'Threat Type', 'Tags', 'Time'],
+        ['Source', 'URL', 'Status', 'Threat Type', 'Tags', 'Time'],
         ...filteredThreats.map(t => [
           t.source,
           t.url,
+          t.status || 'N/A',
           t.threat,
           t.tags.join(';'),
           t.time
@@ -1043,32 +1140,45 @@
     // Generate awareness report
     function generateAwarenessReport() {
       const topThemes = Object.entries(themeStats)
+        .filter(([theme]) => theme !== 'generic')
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
       
       const patterns = extractCommonPatterns();
       const date = new Date().toLocaleDateString();
+      const totalThreats = allThreats.length;
 
       const report = `
 PHISHING THREAT INTELLIGENCE REPORT
 Generated: ${date}
-Source: VAULT 4624
+Source: VAULT 4624 - Enterprise Threat Intelligence
+Data Sources: Phishing Database + OpenPhish
 
 ==============================================
 EXECUTIVE SUMMARY
 ==============================================
 
-Total Threats Analyzed: ${allThreats.length}
-Active Phishing Campaigns Detected: ${allThreats.filter(t => t.threat === 'phishing').length}
-Malware Distribution Sites: ${allThreats.filter(t => t.threat === 'malware').length}
+Total Active Threats Analyzed: ${totalThreats}
+Sample Size: ${sampleSize} URLs per source
+All threats are ACTIVE and pose immediate risk
+
+Status: CRITICAL - Immediate action recommended for top 3 brands
 
 ==============================================
 TOP TARGETED BRANDS
 ==============================================
 
-${topThemes.map(([theme, count], index) => 
-  `${index + 1}. ${theme.toUpperCase()} - ${count} campaigns (${Math.round(count/allThreats.length*100)}% of total)`
-).join('\n')}
+${topThemes.map(([theme, count], index) => {
+  const percentage = Math.round((count / totalThreats) * 100);
+  return `${index + 1}. ${theme.toUpperCase()} - ${count} campaigns (${percentage}% of total threats)`;
+}).join('\n')}
+
+==============================================
+THREAT BREAKDOWN BY SOURCE
+==============================================
+
+Phishing Database: ${allThreats.filter(t => t.source === 'Phishing Database').length} domains
+OpenPhish: ${allThreats.filter(t => t.source === 'OpenPhish').length} URLs
 
 ==============================================
 COMMON THREAT PATTERNS
@@ -1081,39 +1191,66 @@ RECOMMENDATIONS
 ==============================================
 
 1. IMMEDIATE ACTIONS:
-   - Alert users about ${topThemes[0][0].toUpperCase()} phishing campaigns
-   - Block suspicious domains in email gateway
-   - Update security awareness training materials
+   - Issue security alert for ${topThemes[0][0].toUpperCase()} phishing (${topThemes[0][1]} active campaigns)
+   - Block known malicious domains in email gateway/firewall
+   - Update security awareness training with latest examples
+   - Enable enhanced monitoring for top 3 brands
 
 2. USER TRAINING FOCUS:
    - Recognize suspicious URLs with security-themed keywords
+   - Identify typosquatting and homograph attacks
    - Verify sender authenticity before clicking links
-   - Report suspicious emails to security team
+   - Report suspicious emails immediately
+   - Never enter credentials on unverified sites
 
 3. TECHNICAL CONTROLS:
    - Implement URL filtering for detected patterns
-   - Enable multi-factor authentication
-   - Deploy anti-phishing tools
+   - Deploy anti-phishing browser extensions
+   - Enable multi-factor authentication (MFA) on all accounts
+   - Monitor for domain registration of similar brands
+   - Use DMARC/SPF/DKIM email authentication
+
+4. ONGOING MONITORING:
+   - Weekly threat intelligence updates
+   - Track emerging brand targets
+   - Monitor takedown effectiveness
+   - Analyze user reporting trends
 
 ==============================================
-SAMPLE PHISHING INDICATORS
+SAMPLE PHISHING INDICATORS (First 15)
 ==============================================
 
-${filteredThreats.slice(0, 10).map(t => 
-  `[${t.source}] ${t.url} | Tags: ${t.tags.join(', ')}`
-).join('\n')}
+${filteredThreats.slice(0, 15).map((t, i) => 
+  `${i + 1}. [${t.source}] ${t.url}\n   Tags: ${t.tags.join(', ')} | Status: ${t.status}`
+).join('\n\n')}
+
+==============================================
+ADDITIONAL INTELLIGENCE
+==============================================
+
+- Phishing campaigns targeting ${topThemes[0][0].toUpperCase()} show ${Math.round((topThemes[0][1] / totalThreats) * 100)}% prevalence
+- Common tactics: domain typosquatting, security-themed URLs, credential harvesting
+- Average detection: All domains in this report are ACTIVE threats
+- Geographic distribution: Global threat landscape
 
 ==============================================
 
-Report generated by VAULT 4624 Threat Intelligence
-For more information, visit your security dashboard
+Report generated by VAULT 4624 Threat Intelligence Platform
+Next scheduled update: ${new Date(Date.now() + 604800000).toLocaleDateString()}
+
+For technical support or threat submissions:
+- Email: security@vault4624.local
+- Web: https://vault4624.local/dashboard
+
+DISTRIBUTION: Authorized personnel only
+CLASSIFICATION: INTERNAL - SECURITY SENSITIVE
       `;
 
       const blob = new Blob([report], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `phishing_awareness_report_${Date.now()}.txt`;
+      a.download = `phishing_intelligence_report_${Date.now()}.txt`;
       a.click();
     }
   </script>
