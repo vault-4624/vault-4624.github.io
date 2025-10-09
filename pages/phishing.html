@@ -47,6 +47,125 @@
       margin-top: 5px;
     }
 
+    .theme-analysis-section {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    .theme-breakdown {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .theme-card {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 15px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .theme-card:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+      transform: translateY(-3px);
+    }
+
+    .theme-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .theme-card-name {
+      color: var(--main-color);
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    .theme-card-count {
+      color: var(--warning);
+      font-size: 1.5em;
+    }
+
+    .theme-card-bar {
+      height: 8px;
+      background: rgba(74, 250, 154, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .theme-card-bar-fill {
+      height: 100%;
+      background: var(--main-color);
+      transition: width 0.5s ease;
+      box-shadow: 0 0 10px rgba(74, 250, 154, 0.5);
+    }
+
+    .theme-card-examples {
+      margin-top: 10px;
+      font-size: 0.85em;
+      color: var(--dim-color);
+    }
+
+    .awareness-panel {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+
+    .awareness-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .awareness-card {
+      background: rgba(74, 250, 154, 0.03);
+      border-left: 3px solid var(--warning);
+      padding: 15px;
+    }
+
+    .awareness-title {
+      color: var(--warning);
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .awareness-content {
+      color: var(--dim-color);
+      line-height: 1.6;
+    }
+
+    .awareness-examples {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 2px solid var(--dim-color);
+      font-size: 0.9em;
+    }
+
+    .pattern-list {
+      margin-top: 15px;
+    }
+
+    .pattern-item {
+      padding: 8px;
+      margin: 5px 0;
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 2px solid var(--main-color);
+      font-family: monospace;
+    }
+
     .filter-panel {
       background: rgba(0, 0, 0, 0.3);
       border: 1px solid var(--dim-color);
@@ -250,6 +369,12 @@
       .stats-panel {
         grid-template-columns: 1fr;
       }
+      .theme-breakdown {
+        grid-template-columns: 1fr;
+      }
+      .awareness-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -281,7 +406,7 @@
   <!-- Hero -->
   <section class="hero">
     <h1>PHISHING INTELLIGENCE DASHBOARD</h1>
-    <p class="subtitle">Real-time threat feed from multiple OSINT sources</p>
+    <p class="subtitle">Real-time threat feed with automated theme analysis</p>
     <div class="status-bar">
       <div class="status-item">
         <span class="status-indicator success" id="feed-status"></span>
@@ -292,8 +417,10 @@
         LIVE MONITORING
       </div>
       <div class="status-item">
-        <span class="status-indicator success"></span>
-        AUTO-REFRESH: 5MIN
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="auto-refresh-toggle" checked style="cursor: pointer;">
+          <span id="auto-refresh-label">AUTO-REFRESH: WEEKLY</span>
+        </label>
       </div>
     </div>
   </section>
@@ -318,6 +445,28 @@
       <div class="stat-card">
         <div class="stat-number" id="phishtank-count">0</div>
         <div class="stat-label">PHISHTANK</div>
+      </div>
+    </div>
+
+    <!-- Theme Analysis Section -->
+    <div class="theme-analysis-section">
+      <h3>&gt;&gt; THEME ANALYSIS - TOP IMPERSONATED BRANDS</h3>
+      <p style="color: var(--dim-color); margin-top: 10px;">Real-time breakdown of phishing campaigns by target brand</p>
+      <div class="theme-breakdown" id="theme-breakdown">
+        <div class="loading"><p>Analyzing themes...</p></div>
+      </div>
+    </div>
+
+    <!-- Awareness Materials Section -->
+    <div class="awareness-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3>&gt;&gt; SECURITY AWARENESS INTELLIGENCE</h3>
+        <button class="control-btn" onclick="generateAwarenessReport()">GENERATE REPORT</button>
+      </div>
+      <p style="color: var(--dim-color); margin-bottom: 20px;">Actionable insights for phishing awareness training</p>
+      
+      <div class="awareness-grid" id="awareness-content">
+        <div class="loading"><p>Generating awareness materials...</p></div>
       </div>
     </div>
 
@@ -409,21 +558,52 @@
     let activeSources = ['urlhaus', 'openphish', 'phishtank'];
     let isPaused = false;
     let refreshInterval;
+    let themeStats = {};
+    let autoRefreshEnabled = true;
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
       fetchAllThreats();
       
-      // Auto-refresh every 5 minutes
-      refreshInterval = setInterval(() => {
-        if (!isPaused) {
-          fetchAllThreats();
-        }
-      }, 300000);
+      // Setup auto-refresh toggle
+      const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
+      autoRefreshToggle.addEventListener('change', function() {
+        autoRefreshEnabled = this.checked;
+        updateAutoRefresh();
+      });
+      
+      // Start auto-refresh if enabled
+      updateAutoRefresh();
 
       // Real-time keyword filtering
       document.getElementById('keyword-filter').addEventListener('input', applyFilters);
     });
+
+    // Update auto-refresh based on toggle state
+    function updateAutoRefresh() {
+      const label = document.getElementById('auto-refresh-label');
+      
+      // Clear existing interval
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+      
+      if (autoRefreshEnabled) {
+        // Start auto-refresh every week (7 days)
+        refreshInterval = setInterval(() => {
+          if (!isPaused) {
+            fetchAllThreats();
+          }
+        }, 604800000); // 604800000ms = 7 days
+        
+        label.textContent = 'AUTO-REFRESH: WEEKLY';
+        label.style.color = 'var(--main-color)';
+      } else {
+        label.textContent = 'AUTO-REFRESH: OFF';
+        label.style.color = 'var(--dim-color)';
+      }
+    }
 
     // Fetch threats from all sources
     async function fetchAllThreats() {
@@ -440,8 +620,10 @@
       addMockPhishTank();
 
       // Update display
+      analyzeThemes();
       updateStats();
       applyFilters();
+      generateAwarenessContent();
       document.getElementById('status-text').textContent = 'FEED ACTIVE';
     }
 
@@ -456,6 +638,7 @@
             allThreats.push({
               source: 'URLhaus',
               url: defangURL(item.url),
+              rawUrl: item.url,
               threat: item.threat || 'malware',
               tags: item.tags || [],
               time: new Date(item.dateadded).toLocaleTimeString(),
@@ -476,11 +659,13 @@
         const urls = text.split('\n').filter(url => url.trim());
         
         urls.slice(0, 30).forEach(url => {
+          const detectedThemes = detectTheme(url);
           allThreats.push({
             source: 'OpenPhish',
             url: defangURL(url),
+            rawUrl: url,
             threat: 'phishing',
-            tags: detectTheme(url),
+            tags: detectedThemes,
             time: new Date().toLocaleTimeString(),
             timestamp: new Date()
           });
@@ -504,6 +689,7 @@
         allThreats.push({
           source: 'PhishTank',
           url: defangURL(item.url),
+          rawUrl: item.url,
           threat: 'phishing',
           tags: item.tags,
           time: new Date().toLocaleTimeString(),
@@ -517,21 +703,214 @@
       return url.replace(/https?:\/\//gi, 'hxxp://').replace(/\./g, '[.]');
     }
 
-    // Detect theme from URL
+    // Enhanced theme detection
     function detectTheme(url) {
       const themes = [];
       const urlLower = url.toLowerCase();
       
-      if (urlLower.match(/paypal|payment/)) themes.push('paypal');
-      if (urlLower.match(/microsoft|office|outlook|365/)) themes.push('microsoft');
-      if (urlLower.match(/amazon|amzn/)) themes.push('amazon');
-      if (urlLower.match(/apple|icloud|itunes/)) themes.push('apple');
-      if (urlLower.match(/bank|chase|wells|citi|hsbc/)) themes.push('banking');
-      if (urlLower.match(/crypto|bitcoin|wallet|coinbase/)) themes.push('crypto');
-      if (urlLower.match(/google|gmail|drive/)) themes.push('google');
-      if (urlLower.match(/adobe|creative/)) themes.push('adobe');
+      // Brand detection patterns
+      const patterns = {
+        'paypal': /paypal|payment|pay-pal/,
+        'microsoft': /microsoft|office|outlook|365|onedrive|msn|live\.com/,
+        'amazon': /amazon|amzn|aws/,
+        'apple': /apple|icloud|itunes|app-store|appleid/,
+        'banking': /bank|chase|wells|citi|hsbc|bofa|usbank|santander|barclays/,
+        'crypto': /crypto|bitcoin|btc|wallet|coinbase|binance|blockchain|metamask/,
+        'google': /google|gmail|drive|docs|goo\.gl/,
+        'adobe': /adobe|creative|acrobat/,
+        'netflix': /netflix|nflx/,
+        'facebook': /facebook|fb\.com|meta/,
+        'instagram': /instagram|insta/,
+        'linkedin': /linkedin/,
+        'dropbox': /dropbox/,
+        'docusign': /docusign|docu-sign/,
+        'att': /att\.com|at&t/,
+        'verizon': /verizon/,
+        'fedex': /fedex/,
+        'ups': /ups\.com|ups-/,
+        'usps': /usps/,
+        'irs': /irs\.gov|irs-/
+      };
+
+      for (const [theme, pattern] of Object.entries(patterns)) {
+        if (pattern.test(urlLower)) {
+          themes.push(theme);
+        }
+      }
       
       return themes;
+    }
+
+    // Analyze themes across all threats
+    function analyzeThemes() {
+      themeStats = {};
+      const themeExamples = {};
+
+      allThreats.forEach(threat => {
+        threat.tags.forEach(tag => {
+          if (!themeStats[tag]) {
+            themeStats[tag] = 0;
+            themeExamples[tag] = [];
+          }
+          themeStats[tag]++;
+          
+          // Store up to 3 examples per theme
+          if (themeExamples[tag].length < 3) {
+            themeExamples[tag].push(threat.url);
+          }
+        });
+      });
+
+      displayThemeBreakdown(themeExamples);
+    }
+
+    // Display theme breakdown
+    function displayThemeBreakdown(examples) {
+      const breakdownDiv = document.getElementById('theme-breakdown');
+      
+      // Sort themes by count
+      const sortedThemes = Object.entries(themeStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8); // Top 8 themes
+
+      if (sortedThemes.length === 0) {
+        breakdownDiv.innerHTML = '<div class="loading"><p>No themes detected</p></div>';
+        return;
+      }
+
+      const maxCount = sortedThemes[0][1];
+
+      breakdownDiv.innerHTML = sortedThemes.map(([theme, count]) => {
+        const percentage = (count / maxCount) * 100;
+        const exampleUrls = examples[theme] || [];
+        
+        return `
+          <div class="theme-card" onclick="filterByTheme('${theme}')">
+            <div class="theme-card-header">
+              <div class="theme-card-name">${theme.toUpperCase()}</div>
+              <div class="theme-card-count">${count}</div>
+            </div>
+            <div class="theme-card-bar">
+              <div class="theme-card-bar-fill" style="width: ${percentage}%"></div>
+            </div>
+            <div class="theme-card-examples">
+              ${exampleUrls.length > 0 ? `Examples: ${exampleUrls.slice(0, 1).join(', ')}` : 'Multiple detections'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Generate awareness content
+    function generateAwarenessContent() {
+      const awarenessDiv = document.getElementById('awareness-content');
+      
+      // Get top 3 themes
+      const topThemes = Object.entries(themeStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      if (topThemes.length === 0) {
+        awarenessDiv.innerHTML = '<div class="loading"><p>Generating awareness materials...</p></div>';
+        return;
+      }
+
+      // Extract common patterns
+      const patterns = extractCommonPatterns();
+
+      awarenessDiv.innerHTML = `
+        <div class="awareness-card">
+          <div class="awareness-title">🎯 TOP THREATS DETECTED</div>
+          <div class="awareness-content">
+            Current phishing campaigns are primarily targeting:
+            <ul style="margin: 10px 0; padding-left: 20px;">
+              ${topThemes.map(([theme, count]) => 
+                `<li><strong>${theme.toUpperCase()}</strong> - ${count} campaigns detected</li>`
+              ).join('')}
+            </ul>
+            <strong>Action:</strong> Focus security awareness training on these brands this week.
+          </div>
+        </div>
+
+        <div class="awareness-card">
+          <div class="awareness-title">🔍 COMMON URL PATTERNS</div>
+          <div class="awareness-content">
+            Train users to spot these red flags in URLs:
+            <div class="pattern-list">
+              ${patterns.slice(0, 5).map(pattern => 
+                `<div class="pattern-item">${pattern}</div>`
+              ).join('')}
+            </div>
+            <strong>Tip:</strong> Legitimate sites rarely use hyphens or add extra words to their domain names.
+          </div>
+        </div>
+
+        <div class="awareness-card">
+          <div class="awareness-title">⚠️ KEY WARNING SIGNS</div>
+          <div class="awareness-content">
+            <ul style="margin: 10px 0; padding-left: 20px;">
+              <li>Domain names with extra words (e.g., "secure-", "verify-", "account-")</li>
+              <li>Suspicious TLDs (.net, .live, .xyz on familiar brands)</li>
+              <li>Urgent language demanding immediate action</li>
+              <li>Requests to verify account information</li>
+              <li>Misspelled brand names or unusual subdomains</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="awareness-card">
+          <div class="awareness-title">📧 SAMPLE TRAINING EMAIL</div>
+          <div class="awareness-content">
+            Use this template for your security awareness campaign:
+            <div class="awareness-examples">
+              <strong>Subject:</strong> ALERT - ${topThemes[0][0].toUpperCase()} Phishing Campaign Active<br><br>
+              <strong>Body:</strong> Our threat intelligence has detected ${topThemes[0][1]} active phishing campaigns 
+              impersonating ${topThemes[0][0].toUpperCase()}. Be extra vigilant with emails claiming to be from this service. 
+              Always verify URLs before clicking, and report suspicious messages to IT security immediately.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Extract common URL patterns
+    function extractCommonPatterns() {
+      const patterns = new Set();
+      
+      allThreats.forEach(threat => {
+        const url = threat.rawUrl.toLowerCase();
+        
+        // Extract suspicious patterns
+        if (url.includes('secure-')) patterns.add('Contains "secure-" prefix');
+        if (url.includes('verify')) patterns.add('Contains "verify" keyword');
+        if (url.includes('account')) patterns.add('Contains "account" keyword');
+        if (url.includes('update')) patterns.add('Contains "update" keyword');
+        if (url.includes('login')) patterns.add('Contains "login" keyword');
+        if (url.includes('confirm')) patterns.add('Contains "confirm" keyword');
+        if (url.match(/-\w+\./)) patterns.add('Uses hyphens in domain');
+        if (url.match(/\.(live|xyz|top|club)/)) patterns.add('Suspicious TLD (.live, .xyz, .top, .club)');
+      });
+
+      return Array.from(patterns);
+    }
+
+    // Filter by clicking theme card
+    function filterByTheme(theme) {
+      // Clear existing theme filters
+      activeThemes = [theme];
+      
+      // Update UI
+      document.querySelectorAll('.theme-tag').forEach(tag => {
+        tag.classList.remove('active');
+        if (tag.textContent.toLowerCase() === theme) {
+          tag.classList.add('active');
+        }
+      });
+      
+      applyFilters();
+      
+      // Scroll to feed
+      document.querySelector('.feed-container').scrollIntoView({ behavior: 'smooth' });
     }
 
     // Apply all filters
@@ -658,6 +1037,83 @@
       const a = document.createElement('a');
       a.href = url;
       a.download = `phishing_threats_${Date.now()}.csv`;
+      a.click();
+    }
+
+    // Generate awareness report
+    function generateAwarenessReport() {
+      const topThemes = Object.entries(themeStats)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      
+      const patterns = extractCommonPatterns();
+      const date = new Date().toLocaleDateString();
+
+      const report = `
+PHISHING THREAT INTELLIGENCE REPORT
+Generated: ${date}
+Source: VAULT 4624
+
+==============================================
+EXECUTIVE SUMMARY
+==============================================
+
+Total Threats Analyzed: ${allThreats.length}
+Active Phishing Campaigns Detected: ${allThreats.filter(t => t.threat === 'phishing').length}
+Malware Distribution Sites: ${allThreats.filter(t => t.threat === 'malware').length}
+
+==============================================
+TOP TARGETED BRANDS
+==============================================
+
+${topThemes.map(([theme, count], index) => 
+  `${index + 1}. ${theme.toUpperCase()} - ${count} campaigns (${Math.round(count/allThreats.length*100)}% of total)`
+).join('\n')}
+
+==============================================
+COMMON THREAT PATTERNS
+==============================================
+
+${patterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+==============================================
+RECOMMENDATIONS
+==============================================
+
+1. IMMEDIATE ACTIONS:
+   - Alert users about ${topThemes[0][0].toUpperCase()} phishing campaigns
+   - Block suspicious domains in email gateway
+   - Update security awareness training materials
+
+2. USER TRAINING FOCUS:
+   - Recognize suspicious URLs with security-themed keywords
+   - Verify sender authenticity before clicking links
+   - Report suspicious emails to security team
+
+3. TECHNICAL CONTROLS:
+   - Implement URL filtering for detected patterns
+   - Enable multi-factor authentication
+   - Deploy anti-phishing tools
+
+==============================================
+SAMPLE PHISHING INDICATORS
+==============================================
+
+${filteredThreats.slice(0, 10).map(t => 
+  `[${t.source}] ${t.url} | Tags: ${t.tags.join(', ')}`
+).join('\n')}
+
+==============================================
+
+Report generated by VAULT 4624 Threat Intelligence
+For more information, visit your security dashboard
+      `;
+
+      const blob = new Blob([report], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `phishing_awareness_report_${Date.now()}.txt`;
       a.click();
     }
   </script>
