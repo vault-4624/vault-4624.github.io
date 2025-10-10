@@ -128,9 +128,9 @@ const APIUtils = {
     ];
     
     const urlObj = new URL(url);
-    if (!allowedDomains.some(domain => urlObj.hostname.includes(domain))) {
-      throw new Error('CORS proxy only allowed for GitHub domains');
-    }
+if (!allowedDomains.some(domain => urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain))) {
+  throw new Error('CORS proxy only allowed for GitHub domains');
+}
     
     try {
       const response = await fetch(url);
