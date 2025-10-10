@@ -684,14 +684,7 @@
         document.getElementById('status-text').textContent = 'FETCHING PHISHING DATABASE...';
         
         const targetUrl = 'https://phish.co.za/latest/phishing-domains-ACTIVE.txt';
-        
-        // Try multiple CORS proxies in order
-        const corsProxies = [
-          'https://api.allorigins.win/raw?url=',
-          'https://corsproxy.io/?',
-          'https://api.codetabs.com/v1/proxy?quest='
-        ];
-        
+    
         let response = null;
         let lastError = null;
         
@@ -1262,4 +1255,5 @@ CLASSIFICATION: INTERNAL - SECURITY SENSITIVE
     }
   </script>
 </body>
+
 </html>
