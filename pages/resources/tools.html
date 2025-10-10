@@ -1,8 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SECURITY: Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
+                 connect-src 'self' https://raw.githubusercontent.com https://api.github.com https://api.allorigins.win https://corsproxy.io;
+                 img-src 'self' data:;">
   <title>VAULT 4624 - Tools Arsenal</title>
   <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../css/styles.css">
@@ -340,7 +347,7 @@
       <p style="margin-top: 10px;"><a href="../../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
     </div>
   </footer>
-
+<script src="../../js/utils.js"></script>
   <script>
     // Configuration
     const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
