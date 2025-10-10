@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULT 4624 - Vendor Hunting Operations</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <style>
+    .ops-container {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 0;
+      max-width: 1400px;
+      margin: 0 auto;
+      min-height: 70vh;
+    }
+
+    .ops-sidebar {
+      border-right: 1px solid var(--dim-color);
+      background: rgba(0, 0, 0, 0.3);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .ops-category {
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      color: var(--main-color);
+      font-size: 0.9em;
+    }
+
+    .ops-category:hover {
+      background: var(--hover-bg);
+      padding-left: 20px;
+    }
+
+    .ops-category.active {
+      background: var(--hover-bg);
+      border-left: 3px solid var(--main-color);
+      font-weight: bold;
+    }
+
+    .ops-content-area {
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+    }
+
+    .vendor-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .vendor-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .hunt-task {
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 3px solid var(--dim-color);
+      padding: 20px;
+      margin: 20px 0;
+      transition: all 0.3s;
+    }
+
+    .hunt-task:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+    }
+
+    .task-title {
+      color: var(--main-color);
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .task-icon {
+      font-size: 1.3em;
+    }
+
+    .task-steps {
+      margin: 15px 0;
+      padding-left: 20px;
+    }
+
+    .task-steps li {
+      margin: 10px 0;
+      line-height: 1.6;
+      color: var(--dim-color);
+    }
+
+    .task-steps li strong {
+      color: var(--main-color);
+    }
+
+    .query-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--main-color);
+      padding: 15px;
+      margin: 15px 0;
+      position: relative;
+      font-family: 'Courier New', monospace;
+      color: var(--main-color);
+    }
+
+    .query-label {
+      position: absolute;
+      top: -10px;
+      left: 10px;
+      background: var(--bg-color);
+      padding: 0 8px;
+      color: var(--warning);
+      font-size: 0.85em;
+    }
+
+    .tip-box {
+      background: rgba(255, 204, 0, 0.1);
+      border-left: 3px solid var(--warning);
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    .tip-box strong {
+      color: var(--warning);
+    }
+
+    .warning-box {
+      background: rgba(255, 0, 0, 0.1);
+      border-left: 3px solid var(--error);
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    .warning-box strong {
+      color: var(--error);
+    }
+
+    .nav-path {
+      background: rgba(74, 250, 154, 0.05);
+      padding: 10px;
+      margin: 10px 0;
+      border-left: 2px solid var(--main-color);
+      font-family: monospace;
+    }
+
+    .quick-ref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .quick-ref-card {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 15px;
+    }
+
+    .quick-ref-card h4 {
+      color: var(--main-color);
+      margin-bottom: 10px;
+    }
+
+    .platform-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: rgba(74, 250, 154, 0.2);
+      border: 1px solid var(--main-color);
+      color: var(--main-color);
+      font-size: 0.85em;
+      margin-right: 5px;
+    }
+
+    @media (max-width: 968px) {
+      .ops-container {
+        grid-template-columns: 1fr;
+      }
+      .ops-sidebar {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--dim-color);
+      }
+      .quick-ref-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <!-- Main Navigation -->
+  <nav class="main-nav">
+    <div class="nav-brand">
+      VAULT_4624<span class="cursor"></span>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html#phishing" class="nav-link">
+        <span class="prompt">&gt;</span> PHISHING INTEL
+      </a>
+      <a href="../../index.html#hunts" class="nav-link">
+        <span class="prompt">&gt;</span> THREAT HUNTS
+      </a>
+      <a href="../../index.html#resources" class="nav-link">
+        <span class="prompt">&gt;</span> RESOURCES
+      </a>
+      <a href="../../index.html#about" class="nav-link">
+        <span class="prompt">&gt;</span> ABOUT
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>VENDOR HUNTING OPERATIONS</h1>
+    <p class="subtitle">Platform-specific hunting procedures and queries</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        10+ PLATFORMS COVERED
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        FIELD-TESTED PROCEDURES
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        COPY-PASTE READY
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    <div class="ops-container">
+      
+      <!-- Sidebar Menu -->
+      <div class="ops-sidebar">
+        <div class="ops-category active" onclick="showVendor('overview')">OVERVIEW</div>
+        <div class="ops-category" onclick="showVendor('crowdstrike')">CrowdStrike Falcon</div>
+        <div class="ops-category" onclick="showVendor('defender')">Microsoft Defender</div>
+        <div class="ops-category" onclick="showVendor('sentinelone')">SentinelOne</div>
+        <div class="ops-category" onclick="showVendor('checkpoint')">Checkpoint Harmony</div>
+        <div class="ops-category" onclick="showVendor('carbonblack')">Carbon Black</div>
+        <div class="ops-category" onclick="showVendor('cortex')">Cortex XDR</div>
+        <div class="ops-category" onclick="showVendor('splunk')">Splunk</div>
+        <div class="ops-category" onclick="showVendor('elastic')">Elastic/ELK</div>
+        <div class="ops-category" onclick="showVendor('sentinel')">Microsoft Sentinel</div>
+        <div class="ops-category" onclick="showVendor('zeek')">Zeek/Bro</div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="ops-content-area">
+
+        <!-- OVERVIEW -->
+        <div id="overview" class="vendor-section active">
+          <h2>&gt;&gt; HUNTING OPERATIONS GUIDE</h2>
+          <br/>
+          <p>This guide provides platform-specific hunting procedures for common security operations. Each section includes:</p>
+          <br/>
+          <br/>
+          <h3>&gt;&gt; COVERED PLATFORMS</h3>
+          <br/>
+          <div class="quick-ref-grid">
+            <div class="quick-ref-card">
+              <h4>EDR PLATFORMS</h4>
+              <p style="color: var(--dim-color);">
+                • CrowdStrike Falcon<br/>
+                • Microsoft Defender for Endpoint<br/>
+                • SentinelOne<br/>
+                • Checkpoint Harmony Endpoint<br/>
+                • Carbon Black<br/>
+                • Cortex XDR
+              </p>
+            </div>
+            <div class="quick-ref-card">
+              <h4>SIEM PLATFORMS</h4>
+              <p style="color: var(--dim-color);">
+                • Splunk<br/>
+                • Elastic/ELK Stack<br/>
+                • Microsoft Sentinel<br/>
+                • QRadar (coming soon)<br/>
+                • LogRhythm (coming soon)
+              </p>
+            </div>
+            <div class="quick-ref-card">
+              <h4>NETWORK TOOLS</h4>
+              <p style="color: var(--dim-color);">
+                • Zeek/Bro<br/>
+                • Wireshark (coming soon)<br/>
+                • Suricata (coming soon)<br/>
+                • Palo Alto (coming soon)
+              </p>
+            </div>
+          </div>
+          <br/>
+          <div class="tip-box">
+            <strong>💡 PRO TIP:</strong> Bookmark this page for quick reference during incident response. All queries are tested and production-ready.
+          </div>
+        </div>
+
+        <!-- CROWDSTRIKE FALCON -->
+        <div id="crowdstrike" class="vendor-section">
+          <h2>&gt;&gt; CROWDSTRIKE FALCON HUNTING</h2>
+          <br/>
+          <p><span class="platform-badge">EDR</span> <span class="platform-badge">CLOUD</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📁</span>
+              Search for Specific Files
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Investigate → Event Search → Advanced Mode</div>
+              <strong>Steps:</strong>
+              <ol>
+                <li>Navigate to <strong>Investigate</strong> → <strong>Event Search</strong></li>
+                <li>Click <strong>Edit as Query</strong> to enter advanced mode</li>
+                <li>Use the query below to search for files</li>
+                <li>Adjust time range (default: 24 hours)</li>
+                <li>Click <strong>Run Query</strong></li>
+              </ol>
+            </div>
+            <div class="query-box">
+              <span class="query-label">KUSTO QUERY</span>
+              <pre>DeviceEvents
+| where Timestamp > ago(7d)
+| where FileName =~ "suspicious.exe"
+| project Timestamp, DeviceName, FolderPath, FileName, SHA256, InitiatingProcessFileName
+| order by Timestamp desc</pre>
+            </div>
+            <div class="tip-box">
+              <strong>💡 PRO TIP:</strong> Use =~ for case-insensitive matching. Use == for exact case-sensitive matching.
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">⚙️</span>
+              Hunt for Running Processes
+            </div>
+            <div class="query-box">
+              <span class="query-label">KUSTO QUERY</span>
+              <pre>DeviceProcessEvents
+| where Timestamp > ago(24h)
+| where FileName in~ ("powershell.exe", "cmd.exe", "wscript.exe")
+| where ProcessCommandLine contains "invoke"
+| project Timestamp, DeviceName, FileName, ProcessCommandLine, AccountName
+| order by Timestamp desc</pre>
+            </div>
+            <div class="tip-box">
+              <strong>💡 PRO TIP:</strong> Use <code>contains</code> for substring matching, <code>has</code> for whole word matching.
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🌐</span>
+              Network Connections to External IPs
+            </div>
+            <div class="query-box">
+              <span class="query-label">KUSTO QUERY</span>
+              <pre>DeviceNetworkEvents
+| where Timestamp > ago(7d)
+| where RemoteIPType == "Public"
+| where RemotePort in (22, 443, 8080)
+| summarize ConnectionCount=count() by DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName
+| where ConnectionCount > 10
+| order by ConnectionCount desc</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🔐</span>
+              Failed Login Attempts
+            </div>
+            <div class="query-box">
+              <span class="query-label">KUSTO QUERY</span>
+              <pre>DeviceLogonEvents
+| where Timestamp > ago(24h)
+| where ActionType == "LogonFailed"
+| summarize FailedAttempts=count() by DeviceName, AccountName, LogonType
+| where FailedAttempts >= 5
+| order by FailedAttempts desc</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🔑</span>
+              Registry Key Modifications
+            </div>
+            <div class="query-box">
+              <span class="query-label">KUSTO QUERY</span>
+              <pre>DeviceRegistryEvents
+| where Timestamp > ago(7d)
+| where RegistryKey has_any ("Run", "RunOnce", "Startup")
+| project Timestamp, DeviceName, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessFileName
+| order by Timestamp desc</pre>
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <strong>⚠️ PERFORMANCE WARNING:</strong> Queries spanning more than 30 days may timeout. Use time filters aggressively for faster results.
+          </div>
+        </div>
+
+        <!-- CHECKPOINT HARMONY -->
+        <div id="checkpoint" class="vendor-section">
+          <h2>&gt;&gt; CHECKPOINT HARMONY ENDPOINT</h2>
+          <br/>
+          <p><span class="platform-badge">EDR</span> <span class="platform-badge">ON-PREM/CLOUD</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📁</span>
+              Search for Files
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Endpoints → Forensics → File Search</div>
+              <strong>Steps:</strong>
+              <ol>
+                <li>Navigate to <strong>Endpoints</strong> → <strong>Forensics</strong></li>
+                <li>Click <strong>File Search</strong> tab</li>
+                <li>Enter file name or path in search box</li>
+                <li>Select target endpoints or use "All Endpoints"</li>
+                <li>Choose search criteria:
+                  <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><strong>File Name:</strong> Exact or wildcard (*suspicious*.exe)</li>
+                    <li><strong>File Path:</strong> Full path or partial</li>
+                    <li><strong>File Hash:</strong> MD5, SHA1, or SHA256</li>
+                  </ul>
+                </li>
+                <li>Click <strong>Search</strong> and wait for results</li>
+              </ol>
+            </div>
+            <div class="tip-box">
+              <strong>💡 PRO TIP:</strong> File search can take 5-10 minutes for large deployments. Use hash search for faster, more accurate results.
+            </div>
+            <div class="query-box">
+              <span class="query-label">EXAMPLE SEARCH</span>
+              <pre>File Name: *mimikatz*
+File Path: C:\Users\*\Downloads\*
+File Hash: 4a5e9b8c7d6f3a2b1c0d9e8f7a6b5c4d</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">⚙️</span>
+              Process Investigation
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Endpoints → Forensics → Process Investigation</div>
+              <strong>Steps:</strong>
+              <ol>
+                <li>Go to <strong>Forensics</strong> → <strong>Process Investigation</strong></li>
+                <li>Select time range (last 24h, 7 days, custom)</li>
+                <li>Filter by:
+                  <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><strong>Process Name:</strong> powershell.exe, cmd.exe, etc.</li>
+                    <li><strong>Command Line:</strong> Partial command line search</li>
+                    <li><strong>Parent Process:</strong> Filter by parent process</li>
+                    <li><strong>User:</strong> Filter by account name</li>
+                  </ul>
+                </li>
+                <li>Review process tree for suspicious parent-child relationships</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🌐</span>
+              Network Activity Investigation
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Endpoints → Forensics → Network Activity</div>
+              <strong>Steps:</strong>
+              <ol>
+                <li>Navigate to <strong>Network Activity</strong> tab</li>
+                <li>Select endpoint(s) to investigate</li>
+                <li>Filter by:
+                  <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><strong>Remote IP:</strong> Specific external IP</li>
+                    <li><strong>Remote Port:</strong> 22, 443, 3389, etc.</li>
+                    <li><strong>Protocol:</strong> TCP, UDP</li>
+                    <li><strong>Process:</strong> Which process initiated connection</li>
+                  </ul>
+                </li>
+                <li>Look for unusual ports or foreign IPs</li>
+                <li>Export results to CSV for further analysis</li>
+              </ol>
+            </div>
+            <div class="tip-box">
+              <strong>💡 PRO TIP:</strong> Use the "Group by Remote IP" view to identify beaconing behavior - repeated connections to the same IP at regular intervals.
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📊</span>
+              Event Correlation Query
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Logs & Reports → Event Viewer</div>
+              <strong>Advanced Query Builder:</strong>
+              <ol>
+                <li>Click <strong>Advanced Query</strong></li>
+                <li>Build query with multiple conditions:
+                  <pre style="background: rgba(0,0,0,0.3); padding: 10px; margin-top: 5px;">
+Event Type: Process Creation
+AND Process Name: contains "powershell"
+AND Command Line: contains "bypass"
+Time Range: Last 7 days</pre>
+                </li>
+                <li>Add additional filters as needed</li>
+                <li>Save query for reuse</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <strong>⚠️ IMPORTANT:</strong> Checkpoint Harmony requires endpoints to be online for real-time forensics. Offline endpoints won't return results.
+          </div>
+        </div>
+
+        <!-- MICROSOFT DEFENDER -->
+        <div id="defender" class="vendor-section">
+          <h2>&gt;&gt; MICROSOFT DEFENDER FOR ENDPOINT</h2>
+          <br/>
+          <p><span class="platform-badge">EDR</span> <span class="platform-badge">CLOUD</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🔍</span>
+              Advanced Hunting - File Search
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Hunting → Advanced Hunting</div>
+            </div>
+            <div class="query-box">
+              <span class="query-label">KQL QUERY</span>
+              <pre>DeviceFileEvents
+| where Timestamp > ago(7d)
+| where FileName =~ "suspicious.exe" or SHA256 == "hash_here"
+| project Timestamp, DeviceName, FolderPath, FileName, SHA256, InitiatingProcessFileName
+| order by Timestamp desc</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">⚙️</span>
+              PowerShell Execution Hunting
+            </div>
+            <div class="query-box">
+              <span class="query-label">KQL QUERY</span>
+              <pre>DeviceProcessEvents
+| where Timestamp > ago(24h)
+| where FileName =~ "powershell.exe"
+| where ProcessCommandLine has_any ("bypass", "encodedcommand", "invoke-expression")
+| project Timestamp, DeviceName, ProcessCommandLine, AccountName, InitiatingProcessFileName</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🌐</span>
+              Suspicious Network Connections
+            </div>
+            <div class="query-box">
+              <span class="query-label">KQL QUERY</span>
+              <pre>DeviceNetworkEvents
+| where Timestamp > ago(7d)
+| where RemoteIPType == "Public"
+| where RemotePort in (22, 3389, 4444, 5555)
+| extend GeoInfo = geo_info_from_ip_address(RemoteIP)
+| project Timestamp, DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName, Country=tostring(GeoInfo.country)
+| order by Timestamp desc</pre>
+            </div>
+          </div>
+
+          <div class="tip-box">
+            <strong>💡 PRO TIP:</strong> Use the <code>geo_info_from_ip_address()</code> function to enrich your queries with geographic data automatically.
+          </div>
+        </div>
+
+        <!-- SPLUNK -->
+        <div id="splunk" class="vendor-section">
+          <h2>&gt;&gt; SPLUNK HUNTING</h2>
+          <br/>
+          <p><span class="platform-badge">SIEM</span> <span class="platform-badge">ON-PREM/CLOUD</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📁</span>
+              Search for Files in Sysmon Logs
+            </div>
+            <div class="query-box">
+              <span class="query-label">SPL QUERY</span>
+              <pre>index=windows EventCode=11
+| search TargetFilename="*suspicious.exe*"
+| table _time, Computer, TargetFilename, Image, Hashes
+| sort - _time</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">⚙️</span>
+              Process Execution Hunting
+            </div>
+            <div class="query-box">
+              <span class="query-label">SPL QUERY</span>
+              <pre>index=windows EventCode=1
+| search Image="*powershell.exe" CommandLine="*bypass*"
+| table _time, Computer, Image, CommandLine, User, ParentImage
+| sort - _time
+| head 100</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🌐</span>
+              Network Connection Analysis
+            </div>
+            <div class="query-box">
+              <span class="query-label">SPL QUERY</span>
+              <pre>index=windows EventCode=3
+| search DestinationPort IN (22, 443, 3389)
+| stats count by Computer, DestinationIp, DestinationPort, Image
+| where count > 10
+| sort - count</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📊</span>
+              Statistical Anomaly Detection
+            </div>
+            <div class="query-box">
+              <span class="query-label">SPL QUERY</span>
+              <pre>index=windows EventCode=1
+| bucket _time span=1h
+| stats count by _time, Computer, Image
+| eventstats avg(count) as avg, stdev(count) as stdev by Computer, Image
+| eval threshold = avg + (2 * stdev)
+| where count > threshold
+| table _time, Computer, Image, count, threshold</pre>
+            </div>
+            <div class="tip-box">
+              <strong>💡 PRO TIP:</strong> This query identifies processes executing at rates 2 standard deviations above normal - excellent for detecting beaconing or automated attacks.
+            </div>
+          </div>
+        </div>
+
+        <!-- ELASTIC/ELK -->
+        <div id="elastic" class="vendor-section">
+          <h2>&gt;&gt; ELASTIC/ELK STACK HUNTING</h2>
+          <br/>
+          <p><span class="platform-badge">SIEM</span> <span class="platform-badge">OPEN-SOURCE</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🔍</span>
+              Kibana Query Language (KQL)
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Discover → Add Filter</div>
+            </div>
+            <div class="query-box">
+              <span class="query-label">KQL QUERY</span>
+              <pre>event.code: 1 AND process.name: "powershell.exe" AND process.command_line: (*bypass* OR *encodedcommand*)</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📊</span>
+              Lucene Query Syntax
+            </div>
+            <div class="query-box">
+              <span class="query-label">LUCENE QUERY</span>
+              <pre>event.code:11 AND file.name:*.exe AND file.path:*\\Temp\\*</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">⚡</span>
+              Detection Engine Rule
+            </div>
+            <div class="query-box">
+              <span class="query-label">EQL QUERY</span>
+              <pre>process where process.name == "powershell.exe" and 
+  (process.command_line like "*bypass*" or 
+   process.command_line like "*encodedcommand*")</pre>
+            </div>
+          </div>
+
+          <div class="tip-box">
+            <strong>💡 PRO TIP:</strong> Use EQL (Event Query Language) for complex correlation queries. It's more powerful than KQL for threat hunting.
+          </div>
+        </div>
+
+        <!-- SENTINELONE -->
+        <div id="sentinelone" class="vendor-section">
+          <h2>&gt;&gt; SENTINELONE HUNTING</h2>
+          <br/>
+          <p><span class="platform-badge">EDR</span> <span class="platform-badge">CLOUD</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🔍</span>
+              Deep Visibility Query - File Search
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Visibility → Deep Visibility</div>
+            </div>
+            <div class="query-box">
+              <span class="query-label">DEEP VISIBILITY QUERY</span>
+              <pre>EventType = "File Creation" AND TgtFileName ContainsCIS "suspicious.exe"</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">⚙️</span>
+              Process Execution Query
+            </div>
+            <div class="query-box">
+              <span class="query-label">DEEP VISIBILITY QUERY</span>
+              <pre>EventType = "Process Creation" AND (
+  SrcProcName ContainsCIS "powershell.exe" OR 
+  SrcProcName ContainsCIS "cmd.exe"
+) AND SrcProcCmdLine ContainsCIS "bypass"</pre>
+            </div>
+          </div>
+
+          <div class="tip-box">
+            <strong>💡 PRO TIP:</strong> Use <code>ContainsCIS</code> for case-insensitive contains, <code>Contains</code> for case-sensitive.
+          </div>
+        </div>
+
+        <!-- MICROSOFT SENTINEL -->
+        <div id="sentinel" class="vendor-section">
+          <h2>&gt;&gt; MICROSOFT SENTINEL</h2>
+          <br/>
+          <p><span class="platform-badge">SIEM</span> <span class="platform-badge">CLOUD</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🔍</span>
+              KQL Hunting Queries
+            </div>
+            <div class="task-steps">
+              <strong>Navigation Path:</strong>
+              <div class="nav-path">Hunting → Queries → New Query</div>
+            </div>
+            <div class="query-box">
+              <span class="query-label">KQL QUERY</span>
+              <pre>SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4688
+| where Process has "powershell.exe"
+| where CommandLine has_any ("bypass", "encodedcommand")
+| project TimeGenerated, Computer, Account, Process, CommandLine</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📊</span>
+              Cross-Table Correlation
+            </div>
+            <div class="query-box">
+              <span class="query-label">KQL QUERY</span>
+              <pre>let suspiciousProcesses = 
+    SecurityEvent
+    | where EventID == 4688
+    | where Process has "powershell.exe"
+    | project TimeGenerated, Computer, Account;
+let networkConnections = 
+    CommonSecurityLog
+    | where DeviceVendor == "Palo Alto Networks"
+    | project TimeGenerated, Computer=SourceIP;
+suspiciousProcesses
+| join kind=inner (networkConnections) on Computer
+| where abs(datetime_diff('minute', suspiciousProcesses.TimeGenerated, networkConnections.TimeGenerated)) < 5</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- ZEEK -->
+        <div id="zeek" class="vendor-section">
+          <h2>&gt;&gt; ZEEK/BRO NETWORK HUNTING</h2>
+          <br/>
+          <p><span class="platform-badge">NETWORK</span> <span class="platform-badge">OPEN-SOURCE</span></p>
+          <br/>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🌐</span>
+              HTTP Log Analysis
+            </div>
+            <div class="query-box">
+              <span class="query-label">ZEEK-CUT COMMAND</span>
+              <pre>cat http.log | zeek-cut id.orig_h id.resp_h method host uri | grep -i "suspicious"</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">🔐</span>
+              SSL/TLS Certificate Hunting
+            </div>
+            <div class="query-box">
+              <span class="query-label">ZEEK-CUT COMMAND</span>
+              <pre>cat ssl.log | zeek-cut id.orig_h id.resp_h server_name | grep -v "google.com\|microsoft.com\|amazon.com"</pre>
+            </div>
+          </div>
+
+          <div class="hunt-task">
+            <div class="task-title">
+              <span class="task-icon">📊</span>
+              DNS Query Analysis
+            </div>
+            <div class="query-box">
+              <span class="query-label">ZEEK-CUT COMMAND</span>
+              <pre>cat dns.log | zeek-cut id.orig_h query | sort | uniq -c | sort -rn | head -20</pre>
+            </div>
+          </div>
+
+          <div class="tip-box">
+            <strong>💡 PRO TIP:</strong> Pipe Zeek logs into jq for JSON parsing if you're using JSON output format: <code>cat conn.log | jq -r '. | select(.duration > 3600)'</code>
+          </div>
+        </div>
+
+        <!-- Additional vendors would go here -->
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 VENDOR HUNTING OPERATIONS</p>
+      <p>Field-tested procedures for security operations</p>
+      <p style="margin-top: 10px;"><a href="../../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script>
+    function showVendor(vendorId) {
+      // Hide all sections
+      document.querySelectorAll('.vendor-section').forEach(section => {
+        section.classList.remove('active');
+      });
+
+      // Remove active from menu items
+      document.querySelectorAll('.ops-category').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Show selected section
+      document.getElementById(vendorId).classList.add('active');
+      event.currentTarget.classList.add('active');
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Copy query on click
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.query-box pre')) {
+        const query = e.target.closest('.query-box pre').textContent;
+        navigator.clipboard.writeText(query).then(() => {
+          const originalBg = e.target.closest('.query-box').style.background;
+          e.target.closest('.query-box').style.background = 'rgba(74, 250, 154, 0.2)';
+          setTimeout(() => {
+            e.target.closest('.query-box').style.background = originalBg;
+          }, 500);
+        });
+      }
+    });
+  </script>
+</body>
+</html>

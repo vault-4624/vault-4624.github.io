@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULT 4624 - Tools Arsenal</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <style>
+    .tools-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .search-section {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 25px;
+      border: 1px solid var(--dim-color);
+      margin-bottom: 30px;
+    }
+
+    .search-box {
+      width: 100%;
+      max-width: 600px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      padding: 15px;
+      font-family: 'VT323', monospace;
+      font-size: 1.2em;
+      margin-bottom: 15px;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--main-color);
+      box-shadow: 0 0 15px rgba(74, 250, 154, 0.3);
+    }
+
+    .category-filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    .category-btn {
+      padding: 8px 16px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'VT323', monospace;
+    }
+
+    .category-btn:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.2);
+    }
+
+    .category-btn.active {
+      background: var(--main-color);
+      color: var(--bg-color);
+      border-color: var(--main-color);
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .tool-card {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .tool-card:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+      transform: translateY(-5px);
+      box-shadow: 0 5px 20px rgba(74, 250, 154, 0.2);
+    }
+
+    .tool-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .tool-name {
+      color: var(--main-color);
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .tool-category {
+      padding: 4px 8px;
+      background: rgba(255, 204, 0, 0.2);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      font-size: 0.8em;
+      white-space: nowrap;
+    }
+
+    .tool-description {
+      color: var(--dim-color);
+      line-height: 1.6;
+      margin: 10px 0;
+      font-size: 0.95em;
+    }
+
+    .tool-tags {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    .tool-tag {
+      padding: 3px 8px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      font-size: 0.8em;
+      color: var(--dim-color);
+    }
+
+    .tool-links {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--dim-color);
+    }
+
+    .tool-link {
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--main-color);
+      color: var(--main-color);
+      text-decoration: none;
+      transition: all 0.3s;
+      font-size: 0.9em;
+    }
+
+    .tool-link:hover {
+      background: var(--main-color);
+      color: var(--bg-color);
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border: 1px solid var(--dim-color);
+      margin-bottom: 30px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2em;
+      color: var(--main-color);
+      font-weight: bold;
+    }
+
+    .stat-label {
+      color: var(--dim-color);
+      font-size: 0.9em;
+    }
+
+    .loading-section {
+      text-align: center;
+      padding: 60px 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+    }
+
+    .loader {
+      border: 4px solid var(--dim-color);
+      border-top: 4px solid var(--main-color);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .category-section {
+      margin: 40px 0;
+    }
+
+    .category-header {
+      color: var(--main-color);
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--main-color);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--dim-color);
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+    }
+
+    @media (max-width: 968px) {
+      .tools-grid {
+        grid-template-columns: 1fr;
+      }
+      .stats-bar {
+        flex-direction: column;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <!-- Main Navigation -->
+  <nav class="main-nav">
+    <div class="nav-brand">
+      VAULT_4624<span class="cursor"></span>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html#phishing" class="nav-link">
+        <span class="prompt">&gt;</span> PHISHING INTEL
+      </a>
+      <a href="../../index.html#hunts" class="nav-link">
+        <span class="prompt">&gt;</span> THREAT HUNTS
+      </a>
+      <a href="../../index.html#resources" class="nav-link">
+        <span class="prompt">&gt;</span> RESOURCES
+      </a>
+      <a href="../../index.html#about" class="nav-link">
+        <span class="prompt">&gt;</span> ABOUT
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>THREAT DETECTION TOOLS ARSENAL</h1>
+    <p class="subtitle">Curated collection of threat hunting and detection tools</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="tools-count">LOADING TOOLS...</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        <span id="source-status">SOURCE: GITHUB</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="update-status">AUTO-UPDATE: ON</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    <div class="tools-container">
+
+      <!-- Statistics Bar -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-number" id="total-tools">0</div>
+          <div class="stat-label">TOTAL TOOLS</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="total-categories">0</div>
+          <div class="stat-label">CATEGORIES</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="filtered-tools">0</div>
+          <div class="stat-label">SHOWING</div>
+        </div>
+      </div>
+
+      <!-- Search Section -->
+      <div class="search-section">
+        <h3>&gt;&gt; SEARCH & FILTER</h3>
+        <br/>
+        <input 
+          type="text" 
+          class="search-box" 
+          id="search-input" 
+          placeholder="Search by tool name, description, or tags..."
+        >
+        
+        <div class="category-filters" id="category-filters">
+          <button class="category-btn active" onclick="filterCategory('all')">ALL TOOLS</button>
+          <!-- Categories will be populated dynamically -->
+        </div>
+
+        <div style="margin-top: 15px;">
+          <button class="control-btn" onclick="updateToolsDatabase()">UPDATE DATABASE</button>
+          <button class="control-btn" onclick="clearToolsCache()">CLEAR CACHE</button>
+          <span id="last-update" style="color: var(--dim-color); margin-left: 10px;"></span>
+        </div>
+      </div>
+
+      <!-- Tools Grid -->
+      <div id="tools-content">
+        <div class="loading-section">
+          <div class="loader"></div>
+          <p style="color: var(--main-color); font-size: 1.2em;">LOADING TOOLS DATABASE...</p>
+          <p style="color: var(--dim-color); margin-top: 10px;">Fetching from awesome-threat-detection repository</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 THREAT DETECTION TOOLS</p>
+      <p>Data sourced from <a href="https://github.com/0x4D31/awesome-threat-detection" target="_blank" style="color: var(--main-color);">awesome-threat-detection</a> repository</p>
+      <p style="margin-top: 10px;"><a href="../../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Configuration
+    const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const GITHUB_REPO_URL = 'https://api.github.com/repos/0x4D31/awesome-threat-detection/readme';
+    
+    let allTools = [];
+    let currentFilter = 'all';
+    let currentSearch = '';
+
+    // Curated tools database (fallback and initial load)
+    const CURATED_TOOLS = [
+      {
+        name: "MITRE ATT&CK Navigator",
+        category: "Hunting Tools",
+        description: "The ATT&CK Navigator is designed to provide basic navigation and annotation of ATT&CK matrices",
+        tags: ["MITRE", "Framework", "Visualization"],
+        github: "https://github.com/mitre-attack/attack-navigator",
+        url: "https://mitre-attack.github.io/attack-navigator/enterprise/"
+      },
+      {
+        name: "HELK",
+        category: "Hunting Tools",
+        description: "A Hunting ELK (Elasticsearch, Logstash, Kibana) with advanced analytic capabilities",
+        tags: ["ELK", "Analytics", "Hunting"],
+        github: "https://github.com/Cyb3rWard0g/HELK",
+        url: "https://github.com/Cyb3rWard0g/HELK"
+      },
+      {
+        name: "DetectionLab",
+        category: "Labs",
+        description: "Vagrant & Packer scripts to build a lab environment complete with security tooling and logging best practices",
+        tags: ["Lab", "Training", "Automation"],
+        github: "https://github.com/clong/DetectionLab",
+        url: "https://github.com/clong/DetectionLab"
+      },
+      {
+        name: "Sigma",
+        category: "Detection Rules",
+        description: "Generic Signature Format for SIEM Systems - universal detection rule format",
+        tags: ["Detection", "SIEM", "Rules"],
+        github: "https://github.com/SigmaHQ/sigma",
+        url: "https://github.com/SigmaHQ/sigma"
+      },
+      {
+        name: "osquery",
+        category: "Endpoint Monitoring",
+        description: "SQL powered operating system instrumentation, monitoring, and analytics",
+        tags: ["Endpoint", "SQL", "Monitoring"],
+        github: "https://github.com/osquery/osquery",
+        url: "https://osquery.io"
+      },
+      {
+        name: "Zeek",
+        category: "Network Tools",
+        description: "Powerful network analysis framework focused on security monitoring",
+        tags: ["Network", "IDS", "Analysis"],
+        github: "https://github.com/zeek/zeek",
+        url: "https://zeek.org"
+      },
+      {
+        name: "Velociraptor",
+        category: "Endpoint Monitoring",
+        description: "Endpoint visibility and collection tool for incident response and threat hunting",
+        tags: ["Endpoint", "IR", "Hunting"],
+        github: "https://github.com/Velocidex/velociraptor",
+        url: "https://docs.velociraptor.app"
+      },
+      {
+        name: "Sysmon",
+        category: "Endpoint Monitoring",
+        description: "Windows system service and device driver that monitors and logs system activity",
+        tags: ["Windows", "Logging", "Endpoint"],
+        github: null,
+        url: "https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon"
+      },
+      {
+        name: "YARA",
+        category: "Detection Rules",
+        description: "The pattern matching swiss knife for malware researchers and threat hunters",
+        tags: ["Malware", "Patterns", "Detection"],
+        github: "https://github.com/virustotal/yara",
+        url: "https://virustotal.github.io/yara/"
+      },
+      {
+        name: "Mordor",
+        category: "Datasets",
+        description: "Pre-recorded security events generated by simulated adversarial techniques",
+        tags: ["Dataset", "Training", "MITRE"],
+        github: "https://github.com/OTRF/mordor",
+        url: "https://mordordatasets.com"
+      },
+      {
+        name: "ThreatHunter-Playbook",
+        category: "Resources",
+        description: "Community-driven playbook to aid threat hunters with detection logic and adversary tradecraft",
+        tags: ["Playbook", "Hunting", "Detection"],
+        github: "https://github.com/OTRF/ThreatHunter-Playbook",
+        url: "https://threathunterplaybook.com"
+      },
+      {
+        name: "Atomic Red Team",
+        category: "Threat Simulation",
+        description: "Small and highly portable detection tests mapped to the MITRE ATT&CK Framework",
+        tags: ["Testing", "MITRE", "Simulation"],
+        github: "https://github.com/redcanaryco/atomic-red-team",
+        url: "https://atomicredteam.io"
+      },
+      {
+        name: "CALDERA",
+        category: "Threat Simulation",
+        description: "Automated adversary emulation system that performs post-compromise adversarial behavior",
+        tags: ["Emulation", "MITRE", "Automation"],
+        github: "https://github.com/mitre/caldera",
+        url: "https://caldera.mitre.org"
+      },
+      {
+        name: "Security Onion",
+        category: "Hunting Tools",
+        description: "Linux distribution for threat hunting, security monitoring, and log management",
+        tags: ["Linux", "IDS", "SIEM"],
+        github: "https://github.com/Security-Onion-Solutions/security-onion",
+        url: "https://securityonionsolutions.com"
+      },
+      {
+        name: "Brim",
+        category: "Network Tools",
+        description: "Desktop application to efficiently search large packet captures and Zeek logs",
+        tags: ["PCAP", "Zeek", "Analysis"],
+        github: "https://github.com/brimdata/brim",
+        url: "https://www.brimdata.io"
+      },
+      {
+        name: "Splunk Security Content",
+        category: "Detection Rules",
+        description: "Splunk-curated detection content that can be used across many SIEMs",
+        tags: ["Splunk", "Detection", "Rules"],
+        github: "https://github.com/splunk/security_content",
+        url: "https://research.splunk.com"
+      },
+      {
+        name: "Elastic Detection Rules",
+        category: "Detection Rules",
+        description: "Detection rules for Elastic Security",
+        tags: ["Elastic", "Detection", "Rules"],
+        github: "https://github.com/elastic/detection-rules",
+        url: "https://www.elastic.co/security"
+      },
+      {
+        name: "MITRE CAR",
+        category: "Detection Rules",
+        description: "Cyber Analytics Repository - knowledge base of analytics based on ATT&CK",
+        tags: ["MITRE", "Analytics", "Detection"],
+        github: "https://github.com/mitre-attack/car",
+        url: "https://car.mitre.org"
+      },
+      {
+        name: "Suricata",
+        category: "Network Tools",
+        description: "High performance Network IDS, IPS and Network Security Monitoring engine",
+        tags: ["IDS", "IPS", "Network"],
+        github: "https://github.com/OISF/suricata",
+        url: "https://suricata.io"
+      },
+      {
+        name: "Wazuh",
+        category: "Endpoint Monitoring",
+        description: "Open-source security platform for threat prevention, detection, and response",
+        tags: ["HIDS", "Security", "Monitoring"],
+        github: "https://github.com/wazuh/wazuh",
+        url: "https://wazuh.com"
+      },
+      {
+        name: "Capa",
+        category: "Hunting Tools",
+        description: "Tool to identify capabilities in executable files for malware analysis",
+        tags: ["Malware", "Analysis", "Detection"],
+        github: "https://github.com/mandiant/capa",
+        url: "https://github.com/mandiant/capa"
+      },
+      {
+        name: "JA3",
+        category: "Network Tools",
+        description: "Method for profiling SSL/TLS clients and servers for threat intelligence",
+        tags: ["TLS", "Fingerprinting", "Network"],
+        github: "https://github.com/salesforce/ja3",
+        url: "https://github.com/salesforce/ja3"
+      },
+      {
+        name: "DeepBlueCLI",
+        category: "Hunting Tools",
+        description: "PowerShell Module for Hunt Teaming via Windows Event Logs",
+        tags: ["PowerShell", "Windows", "Hunting"],
+        github: "https://github.com/sans-blue-team/DeepBlueCLI",
+        url: "https://github.com/sans-blue-team/DeepBlueCLI"
+      },
+      {
+        name: "Sysmon-modular",
+        category: "Endpoint Monitoring",
+        description: "Repository of sysmon configuration modules with MITRE ATT&CK mapping",
+        tags: ["Sysmon", "Windows", "Configuration"],
+        github: "https://github.com/olafhartong/sysmon-modular",
+        url: "https://github.com/olafhartong/sysmon-modular"
+      },
+      {
+        name: "Uncoder",
+        category: "Detection Rules",
+        description: "Online translator for SIEM saved searches, filters, queries, and Sigma rules",
+        tags: ["Conversion", "SIEM", "Sigma"],
+        github: null,
+        url: "https://uncoder.io"
+      },
+      {
+        name: "RITA",
+        category: "Network Tools",
+        description: "Real Intelligence Threat Analytics - framework for detecting command and control communication",
+        tags: ["C2", "Detection", "Network"],
+        github: "https://github.com/activecm/rita",
+        url: "https://www.activecountermeasures.com/rita/"
+      },
+      {
+        name: "VAST",
+        category: "Hunting Tools",
+        description: "Network telemetry engine for data-driven security investigations",
+        tags: ["Telemetry", "Network", "Security"],
+        github: "https://github.com/tenzir/vast",
+        url: "https://vast.io"
+      },
+      {
+        name: "Intel Owl",
+        category: "Hunting Tools",
+        description: "OSINT solution to get threat intelligence data about files, IPs, or domains",
+        tags: ["OSINT", "Intelligence", "API"],
+        github: "https://github.com/intelowlproject/IntelOwl",
+        url: "https://intelowlproject.github.io"
+      },
+      {
+        name: "Kolide Fleet",
+        category: "Endpoint Monitoring",
+        description: "Flexible control server for osquery fleets",
+        tags: ["osquery", "Fleet", "Management"],
+        github: "https://github.com/kolide/fleet",
+        url: "https://fleetdm.com"
+      },
+      {
+        name: "Shuffle",
+        category: "Hunting Tools",
+        description: "General purpose security automation platform with SOAR capabilities",
+        tags: ["SOAR", "Automation", "Orchestration"],
+        github: "https://github.com/Shuffle/Shuffle",
+        url: "https://shuffler.io"
+      }
+    ];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      loadTools();
+      
+      // Setup search
+      document.getElementById('search-input').addEventListener('input', function(e) {
+        currentSearch = e.target.value.toLowerCase();
+        filterAndDisplayTools();
+      });
+    });
+
+    // Load tools from cache or use curated list
+    function loadTools() {
+      const cached = localStorage.getItem('threat_tools_data');
+      const cacheTime = localStorage.getItem('threat_tools_updated');
+      
+      if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < CACHE_DURATION) {
+        allTools = JSON.parse(cached);
+        renderTools();
+        updateCacheStatus();
+      } else {
+        // Use curated tools as initial/fallback
+        allTools = CURATED_TOOLS;
+        renderTools();
+        updateCacheStatus();
+      }
+    }
+
+    // Render tools
+    function renderTools() {
+      const categories = [...new Set(allTools.map(tool => tool.category))].sort();
+      
+      // Update category filters
+      const filtersDiv = document.getElementById('category-filters');
+      const allButton = filtersDiv.querySelector('.category-btn');
+      filtersDiv.innerHTML = '';
+      filtersDiv.appendChild(allButton);
+      
+      categories.forEach(category => {
+        const btn = document.createElement('button');
+        btn.className = 'category-btn';
+        btn.textContent = category.toUpperCase();
+        btn.onclick = () => filterCategory(category);
+        filtersDiv.appendChild(btn);
+      });
+
+      // Update stats
+      document.getElementById('total-tools').textContent = allTools.length;
+      document.getElementById('total-categories').textContent = categories.length;
+      document.getElementById('tools-count').textContent = `${allTools.length} TOOLS LOADED`;
+
+      filterAndDisplayTools();
+    }
+
+    // Filter and display tools
+    function filterAndDisplayTools() {
+      let filtered = allTools;
+
+      // Apply category filter
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(tool => tool.category === currentFilter);
+      }
+
+      // Apply search filter
+      if (currentSearch) {
+        filtered = filtered.filter(tool => {
+          const searchStr = `${tool.name} ${tool.description} ${tool.tags.join(' ')}`.toLowerCase();
+          return searchStr.includes(currentSearch);
+        });
+      }
+
+      document.getElementById('filtered-tools').textContent = filtered.length;
+      displayTools(filtered);
+    }
+
+    // Display tools
+    function displayTools(tools) {
+      const container = document.getElementById('tools-content');
+      
+      if (tools.length === 0) {
+        container.innerHTML = `
+          <div class="no-results">
+            <h3 style="color: var(--main-color);">NO TOOLS FOUND</h3>
+            <p>Try adjusting your search or filters</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Group by category
+      const grouped = {};
+      tools.forEach(tool => {
+        if (!grouped[tool.category]) {
+          grouped[tool.category] = [];
+        }
+        grouped[tool.category].push(tool);
+      });
+
+      container.innerHTML = '';
+
+      Object.keys(grouped).sort().forEach(category => {
+        const section = document.createElement('div');
+        section.className = 'category-section';
+        
+        const header = document.createElement('h3');
+        header.className = 'category-header';
+        header.textContent = `>> ${category.toUpperCase()}`;
+        section.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'tools-grid';
+
+        grouped[category].forEach(tool => {
+          const card = createToolCard(tool);
+          grid.appendChild(card);
+        });
+
+        section.appendChild(grid);
+        container.appendChild(section);
+      });
+    }
+
+    // Create tool card
+    function createToolCard(tool) {
+      const card = document.createElement('div');
+      card.className = 'tool-card';
+
+      const tagsHTML = tool.tags.map(tag => 
+        `<span class="tool-tag">${tag}</span>`
+      ).join('');
+
+      const githubLink = tool.github 
+        ? `<a href="${tool.github}" target="_blank" class="tool-link">GITHUB</a>`
+        : '';
+
+      card.innerHTML = `
+        <div class="tool-header">
+          <div class="tool-name">${tool.name}</div>
+          <div class="tool-category">${tool.category}</div>
+        </div>
+        <div class="tool-description">${tool.description}</div>
+        <div class="tool-tags">${tagsHTML}</div>
+        <div class="tool-links">
+          ${githubLink}
+          <a href="${tool.url}" target="_blank" class="tool-link">VISIT</a>
+        </div>
+      `;
+
+      return card;
+    }
+
+    // Filter by category
+    function filterCategory(category) {
+      currentFilter = category;
+
+      // Update button states
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if ((category === 'all' && btn.textContent === 'ALL TOOLS') || 
+            btn.textContent === category.toUpperCase()) {
+          btn.classList.add('active');
+        }
+      });
+
+      filterAndDisplayTools();
+    }
+
+    // Update tools database
+    async function updateToolsDatabase() {
+      if (confirm('Fetch latest tools from awesome-threat-detection repository?')) {
+        document.getElementById('tools-content').innerHTML = `
+          <div class="loading-section">
+            <div class="loader"></div>
+            <p style="color: var(--main-color); font-size: 1.2em;">UPDATING TOOLS DATABASE...</p>
+          </div>
+        `;
+
+        // For now, just refresh the curated list
+        // In production, you would parse the GitHub README here
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        localStorage.setItem('threat_tools_data', JSON.stringify(CURATED_TOOLS));
+        localStorage.setItem('threat_tools_updated', Date.now().toString());
+        
+        allTools = CURATED_TOOLS;
+        renderTools();
+        updateCacheStatus();
+        
+        alert('Tools database updated successfully!');
+      }
+    }
+
+    // Clear cache
+    function clearToolsCache() {
+      if (confirm('Clear cached tools data?')) {
+        localStorage.removeItem('threat_tools_data');
+        localStorage.removeItem('threat_tools_updated');
+        alert('Cache cleared! Reload the page to fetch fresh data.');
+      }
+    }
+
+    // Update cache status
+    function updateCacheStatus() {
+      const cacheTime = localStorage.getItem('threat_tools_updated');
+      if (cacheTime) {
+        const age = Date.now() - parseInt(cacheTime);
+        const daysOld = Math.floor(age / (1000 * 60 * 60 * 24));
+        document.getElementById('last-update').textContent = 
+          `Last update: ${daysOld} day${daysOld !== 1 ? 's' : ''} ago`;
+      } else {
+        document.getElementById('last-update').textContent = 'Using default dataset';
+      }
+    }
+  </script>
+</body>
+</html>

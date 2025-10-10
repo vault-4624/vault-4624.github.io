@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULT 4624 - MITRE ATT&CK Navigator</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <style>
+    .matrix-container {
+      overflow-x: auto;
+      margin: 30px 0;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border: 1px solid var(--dim-color);
+    }
+
+    .matrix-grid {
+      display: flex;
+      gap: 15px;
+      min-width: max-content;
+    }
+
+    .tactic-column {
+      min-width: 200px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--dim-color);
+    }
+
+    .tactic-header {
+      background: var(--hover-bg);
+      padding: 15px;
+      text-align: center;
+      border-bottom: 2px solid var(--main-color);
+      font-weight: bold;
+      color: var(--main-color);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .technique-list {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .technique-card {
+      padding: 12px;
+      margin: 8px;
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 3px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9em;
+    }
+
+    .technique-card:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.15);
+      transform: translateX(5px);
+    }
+
+    .technique-card.has-detection {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+    }
+
+    .technique-card.partial-detection {
+      border-left-color: var(--warning);
+      background: rgba(255, 204, 0, 0.1);
+    }
+
+    .technique-id {
+      font-weight: bold;
+      color: var(--warning);
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .technique-name {
+      color: var(--main-color);
+      font-size: 0.95em;
+    }
+
+    .controls-panel {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border: 1px solid var(--dim-color);
+      margin-bottom: 20px;
+    }
+
+    .search-box {
+      width: 100%;
+      max-width: 500px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      padding: 12px;
+      font-family: 'VT323', monospace;
+      font-size: 1.1em;
+      margin-bottom: 15px;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--main-color);
+      box-shadow: 0 0 10px rgba(74, 250, 154, 0.3);
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .filter-btn {
+      padding: 8px 15px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'VT323', monospace;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.2);
+    }
+
+    .filter-btn.active {
+      background: var(--main-color);
+      color: var(--bg-color);
+      border-color: var(--main-color);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 15px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2em;
+      color: var(--main-color);
+      font-weight: bold;
+    }
+
+    .stat-label {
+      color: var(--dim-color);
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--dim-color);
+      margin-bottom: 20px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-box {
+      width: 20px;
+      height: 20px;
+      border-left: 3px solid;
+    }
+
+    .legend-full {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+    }
+
+    .legend-partial {
+      border-color: var(--warning);
+      background: rgba(255, 204, 0, 0.1);
+    }
+
+    .legend-none {
+      border-color: var(--dim-color);
+      background: rgba(74, 250, 154, 0.05);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: var(--bg-color);
+      border: 2px solid var(--main-color);
+      padding: 30px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 0 30px rgba(74, 250, 154, 0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--main-color);
+    }
+
+    .close-modal {
+      cursor: pointer;
+      font-size: 1.5em;
+      color: var(--error);
+      transition: color 0.3s;
+    }
+
+    .close-modal:hover {
+      color: var(--main-color);
+    }
+
+    .modal-section {
+      margin: 20px 0;
+    }
+
+    .modal-section h4 {
+      color: var(--main-color);
+      margin-bottom: 10px;
+    }
+
+    .detection-link {
+      display: inline-block;
+      padding: 8px 15px;
+      background: var(--main-color);
+      color: var(--bg-color);
+      text-decoration: none;
+      margin: 5px;
+      transition: all 0.3s;
+    }
+
+    .detection-link:hover {
+      background: var(--warning);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(74, 250, 154, 0.3);
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      flex-direction: column;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .loader-large {
+      border: 4px solid var(--dim-color);
+      border-top: 4px solid var(--main-color);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .sub-technique {
+      font-size: 0.85em;
+      margin-left: 10px;
+      padding: 8px;
+      margin-top: 5px;
+      border-left: 2px solid var(--dim-color);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 968px) {
+      .matrix-grid {
+        flex-direction: column;
+      }
+      .tactic-column {
+        min-width: 100%;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loader-large"></div>
+    <p style="color: var(--main-color); margin-top: 20px; font-size: 1.2em;">LOADING MITRE ATT&CK FRAMEWORK...</p>
+    <p style="color: var(--dim-color); margin-top: 10px;" id="loading-status">Fetching from GitHub...</p>
+  </div>
+
+  <!-- Main Navigation -->
+  <nav class="main-nav">
+    <div class="nav-brand">
+      VAULT_4624<span class="cursor"></span>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html#phishing" class="nav-link">
+        <span class="prompt">&gt;</span> PHISHING INTEL
+      </a>
+      <a href="../../index.html#hunts" class="nav-link">
+        <span class="prompt">&gt;</span> THREAT HUNTS
+      </a>
+      <a href="../../index.html#resources" class="nav-link">
+        <span class="prompt">&gt;</span> RESOURCES
+      </a>
+      <a href="../../index.html#about" class="nav-link">
+        <span class="prompt">&gt;</span> ABOUT
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>MITRE ATT&CK NAVIGATOR</h1>
+    <p class="subtitle">Enterprise adversary tactics and techniques with detection coverage</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="framework-status">LOADING...</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        <span id="version-info">VERSION CHECKING...</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="coverage-info">COVERAGE: 0%</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    
+    <!-- Statistics -->
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-number" id="total-techniques">0</div>
+        <div class="stat-label">TOTAL TECHNIQUES</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="covered-techniques">0</div>
+        <div class="stat-label">WITH DETECTIONS</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="total-tactics">14</div>
+        <div class="stat-label">TACTICS</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="coverage-percent">0%</div>
+        <div class="stat-label">COVERAGE</div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-box legend-full"></div>
+        <span>Full Detection Coverage</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box legend-partial"></div>
+        <span>Partial Coverage</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box legend-none"></div>
+        <span>No Coverage</span>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-panel">
+      <h3>&gt;&gt; SEARCH & FILTER</h3>
+      <br/>
+      <input type="text" class="search-box" id="search-box" placeholder="Search techniques by ID or name (e.g., T1566 or Phishing)...">
+      
+      <div class="filter-buttons">
+        <button class="filter-btn active" onclick="filterByTactic('all')">ALL TACTICS</button>
+        <button class="filter-btn" onclick="filterByTactic('reconnaissance')">Reconnaissance</button>
+        <button class="filter-btn" onclick="filterByTactic('initial-access')">Initial Access</button>
+        <button class="filter-btn" onclick="filterByTactic('execution')">Execution</button>
+        <button class="filter-btn" onclick="filterByTactic('persistence')">Persistence</button>
+        <button class="filter-btn" onclick="filterByTactic('privilege-escalation')">Privilege Escalation</button>
+        <button class="filter-btn" onclick="filterByTactic('defense-evasion')">Defense Evasion</button>
+        <button class="filter-btn" onclick="filterByTactic('credential-access')">Credential Access</button>
+        <button class="filter-btn" onclick="filterByTactic('discovery')">Discovery</button>
+        <button class="filter-btn" onclick="filterByTactic('lateral-movement')">Lateral Movement</button>
+        <button class="filter-btn" onclick="filterByTactic('collection')">Collection</button>
+        <button class="filter-btn" onclick="filterByTactic('command-and-control')">Command and Control</button>
+        <button class="filter-btn" onclick="filterByTactic('exfiltration')">Exfiltration</button>
+        <button class="filter-btn" onclick="filterByTactic('impact')">Impact</button>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="control-btn" onclick="updateFramework()">UPDATE FRAMEWORK</button>
+        <button class="control-btn" onclick="clearFrameworkCache()">CLEAR CACHE</button>
+        <span id="last-framework-update" style="color: var(--dim-color); margin-left: 10px; line-height: 40px;"></span>
+      </div>
+    </div>
+
+    <!-- ATT&CK Matrix -->
+    <h2 class="section-header">
+      <span class="prompt">&gt;&gt;</span> ENTERPRISE ATT&CK MATRIX
+    </h2>
+
+    <div class="matrix-container">
+      <div class="matrix-grid" id="attack-matrix">
+        <!-- Matrix will be populated here -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Technique Detail Modal -->
+  <div id="technique-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-technique-id"></h2>
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+      </div>
+      <div id="modal-body">
+        <!-- Details will be populated here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 MITRE ATT&CK NAVIGATOR</p>
+      <p>Data from MITRE Corporation's ATT&CK Framework</p>
+      <p style="margin-top: 10px;"><a href="../../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Configuration
+    const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days (MITRE updates monthly)
+    const MITRE_CTI_URL = 'https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json';
+    
+    // Detection mapping - maps MITRE technique IDs to your detection pages
+    const DETECTION_MAPPING = {
+      'T1219': 'rmm', // Remote Access Software
+      'T1567': 'filesharing', // Exfiltration Over Web Service
+      'T1059.001': 'powershell', // PowerShell
+      'T1003': 'credentials', // OS Credential Dumping
+      'T1021': 'lateral', // Remote Services
+      'T1547': 'persistence', // Boot or Logon Autostart Execution
+      'T1053': 'persistence', // Scheduled Task/Job
+      'T1136': 'persistence', // Create Account
+    };
+
+    let attackData = null;
+    let filteredTactics = [];
+    let currentFilter = 'all';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadFramework();
+      
+      // Setup search
+      document.getElementById('search-box').addEventListener('input', function(e) {
+        searchTechniques(e.target.value);
+      });
+    });
+
+    // Load ATT&CK framework
+    async function loadFramework() {
+      const cached = localStorage.getItem('mitre_attack_data');
+      const cacheTime = localStorage.getItem('mitre_attack_updated');
+      
+      if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < CACHE_DURATION) {
+        console.log('Loading from cache...');
+        attackData = JSON.parse(cached);
+        document.getElementById('loading-status').textContent = 'Loading from cache...';
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay for UX
+        renderMatrix();
+        hideLoading();
+        updateCacheStatus();
+      } else {
+        console.log('Fetching from GitHub...');
+        await fetchFramework();
+      }
+    }
+
+    // Fetch framework from MITRE GitHub
+    async function fetchFramework() {
+      try {
+        document.getElementById('loading-status').textContent = 'Downloading MITRE ATT&CK data...';
+        const response = await fetch(MITRE_CTI_URL);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        document.getElementById('loading-status').textContent = 'Parsing framework data...';
+        const data = await response.json();
+        
+        attackData = parseAttackData(data);
+        
+        // Cache it
+        localStorage.setItem('mitre_attack_data', JSON.stringify(attackData));
+        localStorage.setItem('mitre_attack_updated', Date.now().toString());
+        
+        document.getElementById('loading-status').textContent = 'Rendering matrix...';
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        renderMatrix();
+        hideLoading();
+        updateCacheStatus();
+      } catch (error) {
+        console.error('Failed to fetch framework:', error);
+        document.getElementById('loading-status').textContent = `ERROR: ${error.message}`;
+        document.getElementById('framework-status').textContent = 'LOAD FAILED';
+        
+        // Try to use any cached data even if expired
+        const cached = localStorage.getItem('mitre_attack_data');
+        if (cached) {
+          attackData = JSON.parse(cached);
+          renderMatrix();
+          hideLoading();
+        }
+      }
+    }
+
+    // Parse STIX data
+    function parseAttackData(stixData) {
+      const techniques = [];
+      const tactics = new Set();
+      
+      stixData.objects.forEach(obj => {
+        if (obj.type === 'attack-pattern' && !obj.revoked && !obj.x_mitre_deprecated) {
+          const technique = {
+            id: obj.external_references[0].external_id,
+            name: obj.name,
+            description: obj.description,
+            url: obj.external_references[0].url,
+            tactics: obj.kill_chain_phases?.map(phase => phase.phase_name) || [],
+            platforms: obj.x_mitre_platforms || [],
+            isSubTechnique: obj.x_mitre_is_subtechnique || false,
+            parentId: obj.external_references[0].external_id.split('.')[0]
+          };
+          
+          techniques.push(technique);
+          technique.tactics.forEach(tactic => tactics.add(tactic));
+        }
+      });
+
+      return {
+        techniques: techniques,
+        tactics: Array.from(tactics).sort(),
+        version: stixData.spec_version || 'Unknown'
+      };
+    }
+
+    // Render the matrix
+    function renderMatrix() {
+      const matrix = document.getElementById('attack-matrix');
+      matrix.innerHTML = '';
+
+      const tacticOrder = [
+        'reconnaissance',
+        'resource-development',
+        'initial-access',
+        'execution',
+        'persistence',
+        'privilege-escalation',
+        'defense-evasion',
+        'credential-access',
+        'discovery',
+        'lateral-movement',
+        'collection',
+        'command-and-control',
+        'exfiltration',
+        'impact'
+      ];
+
+      tacticOrder.forEach(tactic => {
+        const column = createTacticColumn(tactic);
+        matrix.appendChild(column);
+      });
+
+      updateStats();
+      document.getElementById('framework-status').textContent = 'LOADED';
+      document.getElementById('version-info').textContent = `VERSION: ${attackData.version}`;
+    }
+
+    // Create tactic column
+    function createTacticColumn(tactic) {
+      const column = document.createElement('div');
+      column.className = 'tactic-column';
+      column.dataset.tactic = tactic;
+
+      const header = document.createElement('div');
+      header.className = 'tactic-header';
+      header.textContent = tactic.toUpperCase().replace(/-/g, ' ');
+      column.appendChild(header);
+
+      const list = document.createElement('div');
+      list.className = 'technique-list';
+
+      // Get techniques for this tactic (only parent techniques, not sub-techniques)
+      const techniques = attackData.techniques
+        .filter(t => t.tactics.includes(tactic) && !t.isSubTechnique)
+        .sort((a, b) => a.id.localeCompare(b.id));
+
+      techniques.forEach(technique => {
+        const card = createTechniqueCard(technique);
+        list.appendChild(card);
+
+        // Add sub-techniques
+        const subTechniques = attackData.techniques
+          .filter(t => t.isSubTechnique && t.parentId === technique.id && t.tactics.includes(tactic));
+        
+        subTechniques.forEach(subTech => {
+          const subCard = createTechniqueCard(subTech, true);
+          list.appendChild(subCard);
+        });
+      });
+
+      column.appendChild(list);
+      return column;
+    }
+
+    // Create technique card
+    function createTechniqueCard(technique, isSubTechnique = false) {
+      const card = document.createElement('div');
+      card.className = 'technique-card';
+      if (isSubTechnique) card.classList.add('sub-technique');
+      
+      // Check if we have detection for this technique
+      const hasDetection = DETECTION_MAPPING[technique.id];
+      if (hasDetection) {
+        card.classList.add('has-detection');
+      }
+
+      card.innerHTML = `
+        <span class="technique-id">${technique.id}</span>
+        <span class="technique-name">${technique.name}</span>
+      `;
+
+      card.onclick = () => showTechniqueDetail(technique);
+      card.dataset.techniqueId = technique.id;
+      card.dataset.techniqueName = technique.name.toLowerCase();
+
+      return card;
+    }
+
+    // Show technique detail modal
+    function showTechniqueDetail(technique) {
+      document.getElementById('modal-technique-id').textContent = `${technique.id}: ${technique.name}`;
+      
+      const hasDetection = DETECTION_MAPPING[technique.id];
+      const detectionSection = hasDetection 
+        ? `<div class="modal-section">
+             <h4>🎯 AVAILABLE DETECTIONS</h4>
+             <a href="hunt-overview.html?category=${hasDetection}" class="detection-link" target="_blank">
+               VIEW DETECTION RULES →
+             </a>
+           </div>`
+        : `<div class="modal-section">
+             <h4>⚠️ NO DETECTION COVERAGE</h4>
+             <p style="color: var(--dim-color);">No detection rules available for this technique yet. Consider adding to your threat hunting library.</p>
+           </div>`;
+
+      document.getElementById('modal-body').innerHTML = `
+        <div class="modal-section">
+          <h4>DESCRIPTION</h4>
+          <p style="color: var(--dim-color); line-height: 1.6;">${technique.description.substring(0, 500)}...</p>
+        </div>
+
+        <div class="modal-section">
+          <h4>TACTICS</h4>
+          <p>${technique.tactics.map(t => `<span class="attack-tag">${t.toUpperCase().replace(/-/g, ' ')}</span>`).join(' ')}</p>
+        </div>
+
+        <div class="modal-section">
+          <h4>PLATFORMS</h4>
+          <p>${technique.platforms.join(', ')}</p>
+        </div>
+
+        ${detectionSection}
+
+        <div class="modal-section">
+          <h4>MITRE ATT&CK REFERENCE</h4>
+          <a href="${technique.url}" target="_blank" class="detection-link">
+            VIEW ON MITRE.ORG →
+          </a>
+        </div>
+      `;
+
+      document.getElementById('technique-modal').classList.add('active');
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('technique-modal').classList.remove('active');
+    }
+
+    // Search techniques
+    function searchTechniques(query) {
+      if (!query) {
+        // Show all
+        document.querySelectorAll('.technique-card').forEach(card => {
+          card.style.display = 'block';
+        });
+        return;
+      }
+
+      query = query.toLowerCase();
+      document.querySelectorAll('.technique-card').forEach(card => {
+        const id = card.dataset.techniqueId.toLowerCase();
+        const name = card.dataset.techniqueName;
+        
+        if (id.includes(query) || name.includes(query)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // Filter by tactic
+    function filterByTactic(tactic) {
+      currentFilter = tactic;
+
+      // Update button states
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Show/hide columns
+      document.querySelectorAll('.tactic-column').forEach(column => {
+        if (tactic === 'all' || column.dataset.tactic === tactic) {
+          column.style.display = 'block';
+        } else {
+          column.style.display = 'none';
+        }
+      });
+    }
+
+    // Update statistics
+    function updateStats() {
+      const totalTechniques = attackData.techniques.filter(t => !t.isSubTechnique).length;
+      const coveredTechniques = attackData.techniques.filter(t => DETECTION_MAPPING[t.id]).length;
+      const coverage = Math.round((coveredTechniques / totalTechniques) * 100);
+
+      document.getElementById('total-techniques').textContent = totalTechniques;
+      document.getElementById('covered-techniques').textContent = coveredTechniques;
+      document.getElementById('total-tactics').textContent = attackData.tactics.length;
+      document.getElementById('coverage-percent').textContent = `${coverage}%`;
+      document.getElementById('coverage-info').textContent = `COVERAGE: ${coverage}%`;
+    }
+
+    // Update cache status
+    function updateCacheStatus() {
+      const cacheTime = localStorage.getItem('mitre_attack_updated');
+      if (cacheTime) {
+        const age = Date.now() - parseInt(cacheTime);
+        const daysOld = Math.floor(age / (1000 * 60 * 60 * 24));
+        document.getElementById('last-framework-update').textContent = 
+          `Last update: ${daysOld} day${daysOld !== 1 ? 's' : ''} ago`;
+      }
+    }
+
+    // Update framework
+    async function updateFramework() {
+      if (confirm('Fetch latest ATT&CK framework from MITRE GitHub?')) {
+        showLoading();
+        await fetchFramework();
+      }
+    }
+
+    // Clear cache
+    function clearFrameworkCache() {
+      if (confirm('Clear cached framework data? You will need to download again.')) {
+        localStorage.removeItem('mitre_attack_data');
+        localStorage.removeItem('mitre_attack_updated');
+        alert('Cache cleared! Reload the page to fetch fresh data.');
+      }
+    }
+
+    // Show/hide loading
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.add('hidden');
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+      const modal = document.getElementById('technique-modal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+  </script>
+</body>
+</html>

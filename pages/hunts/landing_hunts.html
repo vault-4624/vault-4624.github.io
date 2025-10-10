@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULT 4624 - Threat Hunting Overview</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/styles.css">
+  <style>
+    .hunt-container {
+      display: flex;
+      gap: 0;
+      max-width: 1400px;
+      margin: 0 auto;
+      min-height: 70vh;
+    }
+
+    .hunt-sidebar {
+      width: 350px;
+      min-width: 350px;
+      border-right: 1px solid var(--dim-color);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .hunt-menu-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      color: var(--main-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hunt-menu-item:hover {
+      background: var(--hover-bg);
+      padding-left: 25px;
+    }
+
+    .hunt-menu-item.active {
+      background: var(--hover-bg);
+      border-left: 3px solid var(--main-color);
+    }
+
+    .hunt-content-area {
+      flex: 1;
+      padding: 30px;
+      background: rgba(0, 0, 0, 0.2);
+      overflow-y: auto;
+    }
+
+    .hunt-content-section {
+      display: none;
+    }
+
+    .hunt-content-section.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .sub-collapsible {
+      margin: 20px 0;
+      padding: 12px;
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 2px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sub-collapsible:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+    }
+
+    .sub-collapsible.active {
+      border-left-color: var(--main-color);
+    }
+
+    .sub-content {
+      display: none;
+      margin-top: 15px;
+      padding-left: 15px;
+    }
+
+    .sub-content.active {
+      display: block;
+    }
+
+    .attack-tag {
+      display: inline-block;
+      padding: 4px 8px;
+      background: rgba(255, 204, 0, 0.1);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      margin: 2px;
+      font-size: 0.9em;
+    }
+
+    .vendor-tabs {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .vendor-tab {
+      padding: 8px 16px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9em;
+    }
+
+    .vendor-tab:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.2);
+    }
+
+    .vendor-tab.active {
+      background: var(--main-color);
+      color: var(--bg-color);
+      border-color: var(--main-color);
+    }
+
+    .vendor-content {
+      display: none;
+    }
+
+    .vendor-content.active {
+      display: block;
+    }
+
+    .update-status {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 0.8em;
+      border-radius: 3px;
+    }
+
+    .status-cached {
+      background: rgba(74, 250, 154, 0.2);
+      color: var(--main-color);
+    }
+
+    .status-loading {
+      background: rgba(255, 204, 0, 0.2);
+      color: var(--warning);
+    }
+
+    .status-error {
+      background: rgba(255, 0, 0, 0.2);
+      color: var(--error);
+    }
+
+    .update-controls {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .loader {
+      border: 2px solid var(--dim-color);
+      border-top: 2px solid var(--main-color);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 968px) {
+      .hunt-container {
+        flex-direction: column;
+      }
+      .hunt-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--dim-color);
+      }
+      .vendor-tabs {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <!-- Main Navigation -->
+  <nav class="main-nav">
+    <div class="nav-brand">
+      VAULT_4624<span class="cursor"></span>
+    </div>
+    <div class="nav-links">
+      <a href="../../index.html#phishing" class="nav-link">
+        <span class="prompt">&gt;</span> PHISHING INTEL
+      </a>
+      <a href="../../index.html#hunts" class="nav-link">
+        <span class="prompt">&gt;</span> THREAT HUNTS
+      </a>
+      <a href="../../index.html#resources" class="nav-link">
+        <span class="prompt">&gt;</span> RESOURCES
+      </a>
+      <a href="../../index.html#about" class="nav-link">
+        <span class="prompt">&gt;</span> ABOUT
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>THREAT HUNTING METHODOLOGIES</h1>
+    <p class="subtitle">Automated detection rules from community sources</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="cache-status">CHECKING CACHE...</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        MITRE ATT&CK MAPPED
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="rule-count">0 RULES LOADED</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    <div class="update-controls">
+      <button class="control-btn" onclick="updateAllRules()">
+        <span id="update-btn-text">UPDATE ALL RULES</span>
+      </button>
+      <button class="control-btn" onclick="clearCache()">CLEAR CACHE</button>
+      <span id="last-update" style="color: var(--dim-color); margin-left: 10px;"></span>
+    </div>
+
+    <h2 class="section-header">
+      <span class="prompt">&gt;&gt;</span> SELECT HUNT CATEGORY
+    </h2>
+    
+    <div class="hunt-container">
+      <!-- Left Sidebar Menu -->
+      <div class="hunt-sidebar">
+        <div class="hunt-menu-item active" onclick="showHunt('home')">
+          <span class="prompt">&gt;</span> [ HOME ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('rmm')">
+          <span class="prompt">&gt;</span> [ REMOTE ACCESS TOOLS ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('filesharing')">
+          <span class="prompt">&gt;</span> [ FILESHARING & EXFILTRATION ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('powershell')">
+          <span class="prompt">&gt;</span> [ POWERSHELL EXPLOITATION ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('credentials')">
+          <span class="prompt">&gt;</span> [ CREDENTIAL DUMPING ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('lateral')">
+          <span class="prompt">&gt;</span> [ LATERAL MOVEMENT ]
+        </div>
+        <div class="hunt-menu-item" onclick="showHunt('persistence')">
+          <span class="prompt">&gt;</span> [ PERSISTENCE MECHANISMS ]
+        </div>
+      </div>
+
+      <!-- Right Content Area -->
+      <div class="hunt-content-area">
+        
+        <!-- HOME CONTENT -->
+        <div id="home" class="hunt-content-section active">
+          <h3>&gt;&gt; AUTOMATED THREAT HUNTING PLATFORM</h3>
+          <br/>
+          <p>This platform automatically fetches the latest detection rules from leading open-source repositories:</p>
+          <br/>
+          <ul style="line-height: 1.8;">
+            <li><strong>Sigma Rules</strong> - Universal SIEM detection format</li>
+            <li><strong>Splunk Detections</strong> - Enterprise security analytics</li>
+            <li><strong>Elastic Rules</strong> - Open-source SIEM detections</li>
+            <li><strong>Microsoft Sentinel</strong> - KQL queries for Azure</li>
+            <li><strong>CrowdStrike Falcon</strong> - EDR hunting queries</li>
+            <li><strong>Chronicle</strong> - Google security analytics</li>
+          </ul>
+          <br/>
+          <p style="color: var(--warning);">⚠️ All rules should be tested in a controlled environment before production deployment.</p>
+          <br/>
+          <p style="color: var(--main-color);">Click "UPDATE ALL RULES" to fetch the latest detections from GitHub!</p>
+        </div>
+
+        <!-- RMM/REMOTE ACCESS CONTENT -->
+        <div id="rmm" class="hunt-content-section">
+          <h3>&gt;&gt; REMOTE ACCESS TOOLS</h3>
+          <br/>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1219: Remote Access Software</span>
+            <span class="attack-tag">T1078: Valid Accounts</span>
+            <span class="attack-tag">T1021: Remote Services</span>
+          </div>
+          <br/>
+
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'rmm', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'rmm', 'falcon')">Falcon</div>
+          </div>
+
+          <div id="rmm-sigma" class="vendor-content active">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="rmm-sigma-content">Loading Sigma rules...</pre>
+            </div>
+          </div>
+
+          <div id="rmm-splunk" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="rmm-splunk-content">Loading Splunk detection...</pre>
+            </div>
+          </div>
+
+          <div id="rmm-elastic" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="rmm-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="rmm-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="rmm-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="rmm-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="rmm-falcon-content">Loading Falcon query...</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILESHARING CONTENT -->
+        <div id="filesharing" class="hunt-content-section">
+          <h3>&gt;&gt; FILESHARING & EXFILTRATION</h3>
+          <br/>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1567: Exfiltration Over Web Service</span>
+            <span class="attack-tag">T1048: Exfiltration Over Alternative Protocol</span>
+            <span class="attack-tag">T1020: Automated Exfiltration</span>
+          </div>
+          <br/>
+
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'filesharing', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'filesharing', 'falcon')">Falcon</div>
+          </div>
+
+          <div id="filesharing-sigma" class="vendor-content active">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="filesharing-sigma-content">Loading Sigma rules...</pre>
+            </div>
+          </div>
+
+          <div id="filesharing-splunk" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="filesharing-splunk-content">Loading Splunk detection...</pre>
+            </div>
+          </div>
+
+          <div id="filesharing-elastic" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="filesharing-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="filesharing-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="filesharing-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="filesharing-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="filesharing-falcon-content">Loading Falcon query...</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- POWERSHELL CONTENT -->
+        <div id="powershell" class="hunt-content-section">
+          <h3>&gt;&gt; POWERSHELL EXPLOITATION</h3>
+          <br/>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1059.001: PowerShell</span>
+            <span class="attack-tag">T1027: Obfuscated Files or Information</span>
+            <span class="attack-tag">T1140: Deobfuscate/Decode Files or Information</span>
+          </div>
+          <br/>
+
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'powershell', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'powershell', 'falcon')">Falcon</div>
+          </div>
+
+          <div id="powershell-sigma" class="vendor-content active">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="powershell-sigma-content">Loading Sigma rules...</pre>
+            </div>
+          </div>
+
+          <div id="powershell-splunk" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="powershell-splunk-content">Loading Splunk detection...</pre>
+            </div>
+          </div>
+
+          <div id="powershell-elastic" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="powershell-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="powershell-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="powershell-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="powershell-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="powershell-falcon-content">Loading Falcon query...</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- CREDENTIALS CONTENT -->
+        <div id="credentials" class="hunt-content-section">
+          <h3>&gt;&gt; CREDENTIAL DUMPING</h3>
+          <br/>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1003: OS Credential Dumping</span>
+            <span class="attack-tag">T1552: Unsecured Credentials</span>
+            <span class="attack-tag">T1555: Credentials from Password Stores</span>
+          </div>
+          <br/>
+
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'credentials', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'credentials', 'falcon')">Falcon</div>
+          </div>
+
+          <div id="credentials-sigma" class="vendor-content active">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="credentials-sigma-content">Loading Sigma rules...</pre>
+            </div>
+          </div>
+
+          <div id="credentials-splunk" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="credentials-splunk-content">Loading Splunk detection...</pre>
+            </div>
+          </div>
+
+          <div id="credentials-elastic" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="credentials-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="credentials-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="credentials-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="credentials-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="credentials-falcon-content">Loading Falcon query...</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- LATERAL MOVEMENT CONTENT -->
+        <div id="lateral" class="hunt-content-section">
+          <h3>&gt;&gt; LATERAL MOVEMENT</h3>
+          <br/>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1021: Remote Services</span>
+            <span class="attack-tag">T1570: Lateral Tool Transfer</span>
+            <span class="attack-tag">T1563: Remote Service Session Hijacking</span>
+          </div>
+          <br/>
+
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'lateral', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'lateral', 'falcon')">Falcon</div>
+          </div>
+
+          <div id="lateral-sigma" class="vendor-content active">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="lateral-sigma-content">Loading Sigma rules...</pre>
+            </div>
+          </div>
+
+          <div id="lateral-splunk" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="lateral-splunk-content">Loading Splunk detection...</pre>
+            </div>
+          </div>
+
+          <div id="lateral-elastic" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="lateral-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="lateral-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="lateral-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="lateral-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="lateral-falcon-content">Loading Falcon query...</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERSISTENCE CONTENT -->
+        <div id="persistence" class="hunt-content-section">
+          <h3>&gt;&gt; PERSISTENCE MECHANISMS</h3>
+          <br/>
+          <p><strong>ATT&CK Techniques:</strong></p>
+          <div>
+            <span class="attack-tag">T1547: Boot or Logon Autostart Execution</span>
+            <span class="attack-tag">T1053: Scheduled Task/Job</span>
+            <span class="attack-tag">T1136: Create Account</span>
+          </div>
+          <br/>
+
+          <div class="vendor-tabs">
+            <div class="vendor-tab active" onclick="switchVendor(this, 'persistence', 'sigma')">Sigma</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'splunk')">Splunk</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'elastic')">Elastic</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'sentinel')">Sentinel</div>
+            <div class="vendor-tab" onclick="switchVendor(this, 'persistence', 'falcon')">Falcon</div>
+          </div>
+
+          <div id="persistence-sigma" class="vendor-content active">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-sigma-content">Loading Sigma rules...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-splunk" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-splunk-content">Loading Splunk detection...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-elastic" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-elastic-content">Loading Elastic rule...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-sentinel" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-sentinel-content">Loading Sentinel KQL query...</pre>
+            </div>
+          </div>
+
+          <div id="persistence-falcon" class="vendor-content">
+            <div class="code-container">
+              <button class="copy-button" onclick="copyToClipboard(this)">COPY CODE</button>
+              <pre class="copyable-code" id="persistence-falcon-content">Loading Falcon query...</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 AUTOMATED THREAT HUNTING PLATFORM</p>
+      <p>Powered by open-source detection engineering communities</p>
+      <p style="margin-top: 10px;"><a href="../../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script>
+    // Configuration
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+    const RULE_SOURCES = {
+      sigma: {
+        rmm: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/process_creation/proc_creation_win_remote_access_tools_anydesk.yml',
+        filesharing: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/proxy/proxy_download_susp_tlds_blacklist.yml',
+        powershell: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/powershell/powershell_script/posh_ps_susp_invoke_obfuscation.yml',
+        credentials: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/process_creation/proc_creation_win_susp_procdump.yml',
+        lateral: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/builtin/security/win_security_susp_failed_logon_source.yml',
+        persistence: 'https://raw.githubusercontent.com/SigmaHQ/sigma/master/rules/windows/registry/registry_set/registry_set_asep_reg_keys_modification_currentversion.yml'
+      },
+      splunk: {
+        rmm: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/detect_remote_access_software_usage_process.yml',
+        filesharing: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/office_product_spawning_bitsadmin.yml',
+        powershell: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/powershell_invoke_expression.yml',
+        credentials: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/credential_dumping_via_copy_command_from_shadow_copy.yml',
+        lateral: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/remote_desktop_process_running_on_system.yml',
+        persistence: 'https://raw.githubusercontent.com/splunk/security_content/develop/detections/endpoint/registry_keys_used_for_persistence.yml'
+      },
+      elastic: {
+        rmm: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/command_and_control_remote_access_software.toml',
+        filesharing: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/exfiltration_file_transfer_to_external_site.toml',
+        powershell: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/execution_suspicious_powershell_encoded_command.toml',
+        credentials: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/credential_access_lsass_memory_dump.toml',
+        lateral: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/lateral_movement_suspicious_rdp_client_connection.toml',
+        persistence: 'https://raw.githubusercontent.com/elastic/detection-rules/main/rules/windows/persistence_suspicious_scheduled_task_creation.toml'
+      }
+    };
+
+    // Fallback rules if fetch fails
+    const FALLBACK_RULES = {
+      falcon: {
+        rmm: `// Hunt for Remote Access Tools
+DeviceProcessEvents
+| where Timestamp > ago(7d)
+| where FileName in~ ("anydesk.exe", "teamviewer.exe", "screenconnect.exe")
+| project Timestamp, DeviceName, FileName, ProcessCommandLine`,
+        filesharing: `// Hunt for File Sharing Activity
+DeviceNetworkEvents
+| where RemoteUrl has_any ("dropbox.com", "drive.google.com", "mega.nz")
+| where SentBytes > 100000000
+| project Timestamp, DeviceName, RemoteUrl, SentBytes`,
+        powershell: `// Hunt for Suspicious PowerShell
+DeviceProcessEvents
+| where FileName =~ "powershell.exe"
+| where ProcessCommandLine has_any ("-enc", "-encodedcommand", "invoke-expression")
+| project Timestamp, DeviceName, ProcessCommandLine`,
+        credentials: `// Hunt for Credential Access
+DeviceProcessEvents
+| where FileName in~ ("procdump.exe", "mimikatz.exe")
+| or ProcessCommandLine has_any ("lsass", "sekurlsa")
+| project Timestamp, DeviceName, FileName, ProcessCommandLine`,
+        lateral: `// Hunt for Lateral Movement
+DeviceLogonEvents
+| where LogonType == "Network"
+| where RemoteIP !startswith "10."
+| project Timestamp, DeviceName, AccountName, RemoteIP, LogonType`,
+        persistence: `// Hunt for Persistence Mechanisms
+DeviceRegistryEvents
+| where RegistryKey has_any ("Run", "RunOnce", "Startup")
+| project Timestamp, DeviceName, RegistryKey, RegistryValueName, RegistryValueData`
+      }
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      checkCache();
+      loadAllRules();
+    });
+
+    // Check cache status
+    function checkCache() {
+      const lastUpdate = localStorage.getItem('hunt_rules_updated');
+      const cacheStatus = document.getElementById('cache-status');
+      
+      if (lastUpdate) {
+        const age = Date.now() - parseInt(lastUpdate);
+        const hoursOld = Math.floor(age / (1000 * 60 * 60));
+        
+        if (age < CACHE_DURATION) {
+          cacheStatus.textContent = `CACHED (${hoursOld}h old)`;
+          document.getElementById('last-update').textContent = `Last update: ${hoursOld}h ago`;
+        } else {
+          cacheStatus.textContent = 'CACHE EXPIRED';
+          document.getElementById('last-update').textContent = 'Cache expired - update recommended';
+        }
+      } else {
+        cacheStatus.textContent = 'NO CACHE';
+        document.getElementById('last-update').textContent = 'Never updated - click UPDATE ALL RULES';
+      }
+    }
+
+    // Load all rules from cache or fetch
+    async function loadAllRules() {
+      const categories = ['rmm', 'filesharing', 'powershell', 'credentials', 'lateral', 'persistence'];
+      const vendors = ['sigma', 'splunk', 'elastic'];
+      
+      let ruleCount = 0;
+
+      for (const category of categories) {
+        // Load vendor rules
+        for (const vendor of vendors) {
+          const cached = localStorage.getItem(`rule_${category}_${vendor}`);
+          if (cached) {
+            document.getElementById(`${category}-${vendor}-content`).textContent = cached;
+            ruleCount++;
+          } else {
+            await fetchRule(category, vendor);
+            ruleCount++;
+          }
+        }
+
+        // Load Falcon fallback rules (always local)
+        const falconContent = document.getElementById(`${category}-falcon-content`);
+        if (falconContent && FALLBACK_RULES.falcon[category]) {
+          falconContent.textContent = FALLBACK_RULES.falcon[category];
+          ruleCount++;
+        }
+
+        // Sentinel (using curated KQL)
+        const sentinelContent = document.getElementById(`${category}-sentinel-content`);
+        if (sentinelContent) {
+          sentinelContent.textContent = generateSentinelRule(category);
+          ruleCount++;
+        }
+      }
+
+      document.getElementById('rule-count').textContent = `${ruleCount} RULES LOADED`;
+    }
+
+    // Fetch rule from GitHub
+    async function fetchRule(category, vendor) {
+      const url = RULE_SOURCES[vendor]?.[category];
+      if (!url) return;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const content = await response.text();
+        document.getElementById(`${category}-${vendor}-content`).textContent = content;
+        localStorage.setItem(`rule_${category}_${vendor}`, content);
+      } catch (error) {
+        console.error(`Failed to fetch ${vendor} rule for ${category}:`, error);
+        const element = document.getElementById(`${category}-${vendor}-content`);
+        element.textContent = `# Failed to load from GitHub\n# Error: ${error.message}\n# Using cached/fallback content if available`;
+      }
+    }
+
+    // Generate basic Sentinel KQL rule
+    function generateSentinelRule(category) {
+      const templates = {
+        rmm: `// Remote Access Tool Detection
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4688
+| where Process has_any ("anydesk.exe", "teamviewer.exe", "screenconnect.exe")
+| project TimeGenerated, Computer, Account, Process, CommandLine`,
+        filesharing: `// File Sharing Detection
+DeviceNetworkEvents
+| where RemoteUrl has_any ("dropbox.com", "drive.google.com", "mega.nz")
+| where ActionType == "ConnectionSuccess"
+| project Timestamp, DeviceName, RemoteUrl, InitiatingProcessFileName`,
+        powershell: `// PowerShell Suspicious Activity
+DeviceProcessEvents
+| where FileName =~ "powershell.exe"
+| where ProcessCommandLine has_any ("-enc", "-nop", "invoke-expression")
+| project Timestamp, DeviceName, ProcessCommandLine`,
+        credentials: `// Credential Dumping Detection
+SecurityEvent
+| where EventID == 4688
+| where Process has_any ("procdump", "mimikatz", "pwdump")
+| or CommandLine has "lsass"
+| project TimeGenerated, Computer, Account, Process, CommandLine`,
+        lateral: `// Lateral Movement Detection
+SecurityEvent
+| where EventID == 4624
+| where LogonType in (3, 10)
+| where IpAddress !startswith "10."
+| project TimeGenerated, Computer, Account, IpAddress, LogonType`,
+        persistence: `// Persistence Detection
+SecurityEvent
+| where EventID in (4657, 4663)
+| where ObjectName has_any ("Run", "RunOnce", "Startup")
+| project TimeGenerated, Computer, Account, ObjectName, ObjectValueName`
+      };
+      return templates[category] || '// Rule template not available';
+    }
+
+    // Update all rules
+    async function updateAllRules() {
+      const button = document.getElementById('update-btn-text');
+      button.innerHTML = 'UPDATING... <span class="loader"></span>';
+      document.getElementById('cache-status').textContent = 'UPDATING...';
+
+      const categories = ['rmm', 'filesharing', 'powershell', 'credentials', 'lateral', 'persistence'];
+      const vendors = ['sigma', 'splunk', 'elastic'];
+
+      for (const category of categories) {
+        for (const vendor of vendors) {
+          await fetchRule(category, vendor);
+        }
+      }
+
+      localStorage.setItem('hunt_rules_updated', Date.now().toString());
+      
+      button.textContent = 'UPDATE COMPLETE!';
+      setTimeout(() => {
+        button.textContent = 'UPDATE ALL RULES';
+      }, 2000);
+
+      checkCache();
+    }
+
+    // Clear cache
+    function clearCache() {
+      if (confirm('Clear all cached rules? You will need to update from GitHub again.')) {
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.startsWith('rule_') || key === 'hunt_rules_updated') {
+            localStorage.removeItem(key);
+          }
+        });
+        document.getElementById('cache-status').textContent = 'CACHE CLEARED';
+        document.getElementById('last-update').textContent = 'Cache cleared - update required';
+        alert('Cache cleared! Click UPDATE ALL RULES to fetch fresh detection rules.');
+      }
+    }
+
+    // Show hunt category
+    function showHunt(huntId) {
+      const sections = document.getElementsByClassName('hunt-content-section');
+      for (let section of sections) {
+        section.classList.remove('active');
+      }
+      
+      const menuItems = document.getElementsByClassName('hunt-menu-item');
+      for (let item of menuItems) {
+        item.classList.remove('active');
+      }
+      
+      document.getElementById(huntId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Switch vendor tab
+    function switchVendor(element, category, vendor) {
+      // Update tabs
+      const tabs = element.parentElement.getElementsByClassName('vendor-tab');
+      for (let tab of tabs) {
+        tab.classList.remove('active');
+      }
+      element.classList.add('active');
+
+      // Update content
+      const contents = element.parentElement.parentElement.getElementsByClassName('vendor-content');
+      for (let content of contents) {
+        content.classList.remove('active');
+      }
+      document.getElementById(`${category}-${vendor}`).classList.add('active');
+    }
+
+    // Copy code to clipboard
+    function copyToClipboard(button) {
+      const codeElement = button.nextElementSibling;
+      const textToCopy = codeElement.textContent;
+      
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        button.textContent = 'COPIED!';
+        setTimeout(() => {
+          button.textContent = 'COPY CODE';
+        }, 2000);
+      }, (err) => {
+        alert("Failed to copy: " + err);
+      });
+    }
+  </script>
+</body>
+</html>
