@@ -1,10 +1,8 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- SECURITY: Content Security Policy -->
-<!-- SECURITY: Content Security Policy -->
   <meta http-equiv="Content-Security-Policy" 
         content="default-src 'self'; 
                  script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
@@ -20,18 +18,19 @@
   <div class="scanline"></div>
   <div class="overlay"></div>
 
-  <!-- Optional Boot Screen -->
   <div class="boot-modal" id="bootModal">
     <div class="boot-text">&gt;&gt; VAULT 4624 INITIALIZING<span class="cursor"></span></div>
     <div class="skip-text" onclick="skipBoot()">[ PRESS TO SKIP ]</div>
   </div>
 
-  <!-- Main Navigation -->
   <nav class="main-nav">
     <div class="nav-brand">
       VAULT_4624<span class="cursor"></span>
     </div>
     <div class="nav-links">
+      <a href="#intelligence" class="nav-link">
+        <span class="prompt">&gt;</span> INTELLIGENCE
+      </a>
       <a href="#phishing" class="nav-link">
         <span class="prompt">&gt;</span> PHISHING INTEL
       </a>
@@ -41,18 +40,13 @@
       <a href="#resources" class="nav-link">
         <span class="prompt">&gt;</span> RESOURCES
       </a>
-      <a href="#about" class="nav-link">
-        <span class="prompt">&gt;</span> ABOUT
-      </a>
     </div>
   </nav>
 
-  <!-- Hero Section -->
   <section class="hero">
     <h1>VAULT 4624</h1>
     <p class="subtitle">LOGIN SUCCESSFUL - WELCOME, VAULT DWELLER</p>
-
-    <p class="subtitle"> >> You have discovered my threat hunting for-fun project. I hope this information proves useful during your travels.</p>
+    <p class="subtitle">>> You have discovered my threat hunting for-fun project. I hope this information proves useful during your travels.</p>
     <div class="status-bar">
       <div class="status-item">
         <span class="status-indicator success"></span>
@@ -69,9 +63,50 @@
     </div>
   </section>
 
-  <!-- Main Content -->
   <div class="content-wrapper">
     
+    <!-- Threat Intelligence Center -->
+    <section id="intelligence">
+      <h2 class="section-header">
+        <span class="prompt">&gt;&gt;</span> THREAT INTELLIGENCE CENTER
+      </h2>
+      <div class="content-grid">
+        <div class="terminal-card">
+          <div class="card-header">
+            <span class="status-indicator success"></span>
+            IOC FEED
+          </div>
+          <div class="card-meta">
+            <div class="meta-item">🔍 Real-time IOCs</div>
+            <div class="meta-item">📊 Multi-source</div>
+          </div>
+          <div class="card-content">
+            Live indicators of compromise from MalwareBazaar, ThreatFox, URLhaus. Track malware hashes, malicious IPs, C2 domains, and suspicious URLs.
+          </div>
+          <a href="pages/ioc-feed.html" class="btn-terminal">
+            VIEW FEED &gt;&gt;
+          </a>
+        </div>
+
+        <div class="terminal-card">
+          <div class="card-header">
+            <span class="status-indicator success"></span>
+            YARA RULES LIBRARY
+          </div>
+          <div class="card-meta">
+            <div class="meta-item">🦠 50+ Rules</div>
+            <div class="meta-item">🎯 Multiple Categories</div>
+          </div>
+          <div class="card-content">
+            Comprehensive YARA rules for ransomware, APTs, webshells, trojans, and more. Copy-paste ready detection signatures for malware hunting.
+          </div>
+          <a href="pages/yara-rules.html" class="btn-terminal">
+            ACCESS RULES &gt;&gt;
+          </a>
+        </div>
+      </div>
+    </section>
+
     <!-- Phishing Intelligence Section -->
     <section id="phishing">
       <h2 class="section-header">
@@ -84,8 +119,8 @@
             LIVE THREAT FEED
           </div>
           <div class="card-meta">
-            <div class="meta-item">ðŸ“¡ Sources: PhishTank, URLhaus, OpenPhish</div>
-            <div class="meta-item">ðŸ”„ Real-time Updates</div>
+            <div class="meta-item">📡 Sources: PhishTank, URLhaus, OpenPhish</div>
+            <div class="meta-item">🔄 Real-time Updates</div>
           </div>
           <div class="card-content">
             Monitor emerging phishing campaigns and malicious infrastructure as they're discovered across multiple threat intelligence feeds.
@@ -106,8 +141,8 @@
             OSINT RESOURCES
           </div>
           <div class="card-meta">
-            <div class="meta-item">ðŸ” Threat Intelligence Platforms</div>
-            <div class="meta-item">ðŸ“Š Analysis Tools</div>
+            <div class="meta-item">🔎 Threat Intelligence Platforms</div>
+            <div class="meta-item">📊 Analysis Tools</div>
           </div>
           <div class="card-content">
             Essential open-source intelligence platforms for threat research, domain analysis, and phishing campaign tracking.
@@ -136,7 +171,7 @@
       </div>
     </section>
 
-     <!-- Hunt Categories -->
+    <!-- Hunt Categories -->
     <section id="categories">
       <h2 class="section-header">
         <span class="prompt">&gt;&gt;</span> HUNT CATEGORIES
@@ -148,8 +183,8 @@
             MY FAVOURITES
           </div>
           <div class="card-meta">
-            <div class="meta-item">â­ Curated Collection</div>
-            <div class="meta-item">ðŸŽ¯ High-Impact Hunts</div>
+            <div class="meta-item">⭐ Curated Collection</div>
+            <div class="meta-item">🎯 High-Impact Hunts</div>
           </div>
           <div class="card-content">
             Hand-picked threat hunting scenarios that have proven most effective in real-world investigations. Start here for maximum impact.
@@ -165,8 +200,8 @@
             MITRE ATT&CK SPECIFIC
           </div>
           <div class="card-meta">
-            <div class="meta-item">ðŸ“‹ Framework Mapped</div>
-            <div class="meta-item">ðŸ” TTP Coverage</div>
+            <div class="meta-item">📋 Framework Mapped</div>
+            <div class="meta-item">🔍 TTP Coverage</div>
           </div>
           <div class="card-content">
             Hunts organized by MITRE ATT&CK framework tactics and techniques. Perfect for systematic threat coverage and gap analysis.
@@ -182,8 +217,8 @@
             VENDOR SPECIFIC
           </div>
           <div class="card-meta">
-            <div class="meta-item">ðŸ¢ Platform Focused</div>
-            <div class="meta-item">âš™ï¸ Tool-Optimized</div>
+            <div class="meta-item">🏢 Platform Focused</div>
+            <div class="meta-item">⚙️ Tool-Optimized</div>
           </div>
           <div class="card-content">
             Detection queries and hunting techniques optimized for specific security platforms including Splunk, Sentinel, ELK, and more.
@@ -199,33 +234,70 @@
             PORT HUNTS - INACTIVE
           </div>
           <div class="card-meta">
-            <div class="meta-item">ðŸ”Œ Network Analysis</div>
-            <div class="meta-item">ðŸ“¡ Traffic Patterns</div>
+            <div class="meta-item">🔌 Network Analysis</div>
+            <div class="meta-item">📡 Traffic Patterns</div>
           </div>
           <div class="card-content">
             Hunt for suspicious network activity based on unusual port usage, non-standard protocols, and anomalous traffic patterns.
           </div>
-          <a href="../pages/general_hunts/ports/hunts_ports.html" class="btn-terminal">
+          <a href="pages/general_hunts/ports/hunts_ports.html" class="btn-terminal">
             ANALYZE PORTS &gt;&gt;
           </a>
         </div>
       </div>
     </section>
-  
 
     <!-- Resources Section -->
     <section id="resources">
       <h2 class="section-header">
-        <span class="prompt">&gt;&gt;</span> USEFUL RESOURCES
+        <span class="prompt">&gt;&gt;</span> ESSENTIAL RESOURCES
       </h2>
       <div class="content-grid">
         <div class="terminal-card">
           <div class="card-header">
             <span class="status-indicator success"></span>
-            TOOL REPOSITORY
+            CHEAT SHEETS
+          </div>
+          <div class="card-meta">
+            <div class="meta-item">📋 Quick Reference</div>
+            <div class="meta-item">🔍 Searchable</div>
           </div>
           <div class="card-content">
-            Curated collection of threat hunting tools, scripts, and utilities for log analysis, threat intelligence, and forensic investigation.
+            Windows Event IDs, Sysmon events, common ports, regex patterns, PowerShell commands, and Linux log locations. Essential reference for threat hunters.
+          </div>
+          <a href="pages/cheat-sheets.html" class="btn-terminal">
+            VIEW CHEAT SHEETS &gt;&gt;
+          </a>
+        </div>
+
+        <div class="terminal-card">
+          <div class="card-header">
+            <span class="status-indicator success"></span>
+            IR PLAYBOOKS
+          </div>
+          <div class="card-meta">
+            <div class="meta-item">📖 10+ Playbooks</div>
+            <div class="meta-item">✅ NIST Aligned</div>
+          </div>
+          <div class="card-content">
+            Step-by-step incident response procedures for ransomware, phishing, data breaches, malware outbreaks, and more. Field-tested methodologies.
+          </div>
+          <a href="pages/ir-playbooks.html" class="btn-terminal">
+            ACCESS PLAYBOOKS &gt;&gt;
+          </a>
+        </div>
+
+        <div class="terminal-card">
+          <div class="card-header">
+            <span class="status-indicator success"></span>
+            TOOL REPOSITORY
+          </div>
+          <div class="card-meta">
+            <div class="meta-item">🛠️ 30+ Tools</div>
+            <div class="meta-item">📚 Categorized</div>
+          </div>
+          <div class="card-content">
+            Curated collection of threat hunting tools, scripts, and utilities. From osquery to Velociraptor, HELK to Sigma rules.
           </div>
           <a href="pages/resources/tools.html" class="btn-terminal">
             ACCESS TOOLS &gt;&gt;
@@ -236,6 +308,10 @@
           <div class="card-header">
             <span class="status-indicator success"></span>
             LEARNING PATHS
+          </div>
+          <div class="card-meta">
+            <div class="meta-item">🎓 Training</div>
+            <div class="meta-item">🔬 Labs</div>
           </div>
           <div class="card-content">
             Structured learning paths from beginner to advanced threat hunter. Labs, challenges, and real-world scenarios to build your skills.
@@ -254,22 +330,22 @@
       </h2>
       <div class="features-grid">
         <div class="feature-item">
-          <div class="feature-icon">ðŸ”</div>
+          <div class="feature-icon">🔍</div>
           <h3>HUNT METHODOLOGIES</h3>
           <p>Hypothesis-driven investigation techniques</p>
         </div>
         <div class="feature-item">
-          <div class="feature-icon">ðŸ“Š</div>
+          <div class="feature-icon">📊</div>
           <h3>DATA ANALYSIS</h3>
           <p>Log correlation and pattern recognition</p>
         </div>
         <div class="feature-item">
-          <div class="feature-icon">ðŸŽ¯</div>
+          <div class="feature-icon">🎯</div>
           <h3>THREAT INTEL</h3>
           <p>IOCs, TTPs, and adversary profiling</p>
         </div>
         <div class="feature-item">
-          <div class="feature-icon">âš™ï¸</div>
+          <div class="feature-icon">⚙️</div>
           <h3>AUTOMATION</h3>
           <p>Scripts and detection engineering</p>
         </div>
@@ -278,7 +354,6 @@
 
   </div>
 
-  <!-- Footer -->
   <footer class="footer">
     <div class="footer-content">
       <p>&gt;&gt; VAULT 4624 THREAT HUNTING TERMINAL</p>
@@ -287,7 +362,7 @@
     </div>
   </footer>
 
-<script src="js/utils.js"></script>
+  <script src="js/utils.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>
