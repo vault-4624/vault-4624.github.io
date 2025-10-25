@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
+                 connect-src 'self' https://raw.githubusercontent.com https://api.github.com https://api.allorigins.win https://corsproxy.io https://mb-api.abuse.ch https://threatfox-api.abuse.ch https://urlhaus-api.abuse.ch;
+                 img-src 'self' data:;">
+  <title>VAULT 4624 - IOC Feed</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .ioc-dashboard {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .ioc-filters {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .filter-section {
+      margin-bottom: 20px;
+    }
+
+    .filter-title {
+      color: var(--main-color);
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .filter-option {
+      padding: 8px;
+      margin: 5px 0;
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 2px solid var(--dim-color);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-option:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+    }
+
+    .filter-option.active {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.15);
+    }
+
+    .ioc-content {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .ioc-item {
+      background: rgba(74, 250, 154, 0.03);
+      border-left: 3px solid var(--dim-color);
+      padding: 15px;
+      margin-bottom: 15px;
+      transition: all 0.3s;
+    }
+
+    .ioc-item:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.08);
+      transform: translateX(5px);
+    }
+
+    .ioc-item.critical {
+      border-left-color: var(--error);
+    }
+
+    .ioc-item.high {
+      border-left-color: var(--warning);
+    }
+
+    .ioc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .ioc-type {
+      padding: 3px 8px;
+      background: rgba(255, 204, 0, 0.2);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      font-size: 0.85em;
+    }
+
+    .ioc-value {
+      color: var(--error);
+      font-family: monospace;
+      word-break: break-all;
+      margin: 10px 0;
+      font-size: 0.95em;
+    }
+
+    .ioc-meta {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: var(--dim-color);
+    }
+
+    .ioc-tag {
+      padding: 3px 8px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      font-size: 0.8em;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-box {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2.5em;
+      color: var(--main-color);
+      font-weight: bold;
+    }
+
+    .stat-label {
+      color: var(--dim-color);
+      font-size: 0.9em;
+    }
+
+    @media (max-width: 968px) {
+      .ioc-dashboard {
+        grid-template-columns: 1fr;
+      }
+      .ioc-filters {
+        position: relative;
+        top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <nav class="main-nav">
+    <div class="nav-brand">VAULT_4624<span class="cursor"></span></div>
+    <div class="nav-links">
+      <a href="../index.html#phishing" class="nav-link"><span class="prompt">&gt;</span> PHISHING INTEL</a>
+      <a href="../index.html#hunts" class="nav-link"><span class="prompt">&gt;</span> THREAT HUNTS</a>
+      <a href="../index.html#resources" class="nav-link"><span class="prompt">&gt;</span> RESOURCES</a>
+      <a href="../index.html#about" class="nav-link"><span class="prompt">&gt;</span> ABOUT</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>IOC INTELLIGENCE FEED</h1>
+    <p class="subtitle">Real-time indicators of compromise from multiple threat sources</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="status-text">CONNECTING...</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        LIVE MONITORING
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="total-iocs">0 IOCs LOADED</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="content-wrapper">
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-number" id="hash-count">0</div>
+        <div class="stat-label">MALWARE HASHES</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="ip-count">0</div>
+        <div class="stat-label">MALICIOUS IPs</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="domain-count">0</div>
+        <div class="stat-label">C2 DOMAINS</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number" id="url-count">0</div>
+        <div class="stat-label">MALICIOUS URLs</div>
+      </div>
+    </div>
+
+    <div class="ioc-dashboard">
+      <div class="ioc-filters">
+        <h3>&gt;&gt; FILTERS</h3>
+        <br/>
+        
+        <div class="filter-section">
+          <div class="filter-title">IOC TYPE:</div>
+          <div class="filter-option active" onclick="filterType('all')">All Types</div>
+          <div class="filter-option" onclick="filterType('hash')">File Hashes</div>
+          <div class="filter-option" onclick="filterType('ip')">IP Addresses</div>
+          <div class="filter-option" onclick="filterType('domain')">Domains</div>
+          <div class="filter-option" onclick="filterType('url')">URLs</div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-title">THREAT TYPE:</div>
+          <div class="filter-option active" onclick="filterThreat('all')">All Threats</div>
+          <div class="filter-option" onclick="filterThreat('ransomware')">Ransomware</div>
+          <div class="filter-option" onclick="filterThreat('trojan')">Trojan</div>
+          <div class="filter-option" onclick="filterThreat('botnet')">Botnet</div>
+          <div class="filter-option" onclick="filterThreat('c2')">C2 Server</div>
+        </div>
+
+        <div class="filter-section">
+          <button class="control-btn" onclick="refreshFeed()" style="width: 100%; margin-bottom: 10px;">REFRESH</button>
+          <button class="control-btn" onclick="exportIOCs()" style="width: 100%;">EXPORT CSV</button>
+        </div>
+      </div>
+
+      <div class="ioc-content">
+        <div id="ioc-feed">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading IOC intelligence...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 IOC INTELLIGENCE</p>
+      <p>Sources: MalwareBazaar, ThreatFox, URLhaus, AbuseIPDB</p>
+      <p style="margin-top: 10px;"><a href="../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script src="../js/utils.js"></script>
+  <script>
+    let allIOCs = [];
+    let filteredIOCs = [];
+    let currentTypeFilter = 'all';
+    let currentThreatFilter = 'all';
+
+    // Mock IOC data (in production, fetch from APIs)
+    const MOCK_IOCS = [
+      {
+        type: 'hash',
+        value: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        threat: 'ransomware',
+        source: 'MalwareBazaar',
+        malware: 'LockBit 3.0',
+        confidence: 'High',
+        firstSeen: '2024-01-15',
+        tags: ['ransomware', 'lockbit', 'critical']
+      },
+      {
+        type: 'ip',
+        value: '192.0.2.1',
+        threat: 'c2',
+        source: 'ThreatFox',
+        malware: 'AsyncRAT',
+        confidence: 'High',
+        firstSeen: '2024-01-14',
+        tags: ['c2', 'rat', 'botnet']
+      },
+      {
+        type: 'domain',
+        value: 'malicious-c2-server[.]com',
+        threat: 'c2',
+        source: 'URLhaus',
+        malware: 'Emotet',
+        confidence: 'Medium',
+        firstSeen: '2024-01-13',
+        tags: ['c2', 'emotet', 'banking']
+      },
+      {
+        type: 'hash',
+        value: 'a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890',
+        threat: 'trojan',
+        source: 'MalwareBazaar',
+        malware: 'AgentTesla',
+        confidence: 'High',
+        firstSeen: '2024-01-12',
+        tags: ['trojan', 'keylogger', 'stealer']
+      },
+      {
+        type: 'url',
+        value: 'hxxp://evil-malware-site[.]xyz/payload.exe',
+        threat: 'dropper',
+        source: 'URLhaus',
+        malware: 'Qakbot',
+        confidence: 'High',
+        firstSeen: '2024-01-11',
+        tags: ['dropper', 'qakbot', 'banking']
+      },
+      {
+        type: 'ip',
+        value: '198.51.100.42',
+        threat: 'botnet',
+        source: 'AbuseIPDB',
+        malware: 'Mirai',
+        confidence: 'Medium',
+        firstSeen: '2024-01-10',
+        tags: ['botnet', 'ddos', 'iot']
+      },
+      {
+        type: 'domain',
+        value: 'phishing-banking-site[.]net',
+        threat: 'phishing',
+        source: 'ThreatFox',
+        malware: 'Credential Harvester',
+        confidence: 'High',
+        firstSeen: '2024-01-09',
+        tags: ['phishing', 'banking', 'credential-theft']
+      },
+      {
+        type: 'hash',
+        value: '5f4dcc3b5aa765d61d8327deb882cf99abcdef1234567890abcdef1234567890',
+        threat: 'ransomware',
+        source: 'MalwareBazaar',
+        malware: 'BlackCat (ALPHV)',
+        confidence: 'Critical',
+        firstSeen: '2024-01-08',
+        tags: ['ransomware', 'blackcat', 'critical']
+      }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadIOCs();
+    });
+
+    function loadIOCs() {
+      document.getElementById('status-text').textContent = 'LOADING IOCs...';
+      
+      // In production, fetch from actual APIs
+      // For now, use mock data
+      allIOCs = MOCK_IOCS;
+      
+      updateStats();
+      applyFilters();
+      document.getElementById('status-text').textContent = 'FEED ACTIVE';
+    }
+
+    function updateStats() {
+      document.getElementById('hash-count').textContent = allIOCs.filter(i => i.type === 'hash').length;
+      document.getElementById('ip-count').textContent = allIOCs.filter(i => i.type === 'ip').length;
+      document.getElementById('domain-count').textContent = allIOCs.filter(i => i.type === 'domain').length;
+      document.getElementById('url-count').textContent = allIOCs.filter(i => i.type === 'url').length;
+      document.getElementById('total-iocs').textContent = `${allIOCs.length} IOCs LOADED`;
+    }
+
+    function filterType(type) {
+      currentTypeFilter = type;
+      updateFilterUI('.filter-section:nth-child(1) .filter-option', type);
+      applyFilters();
+    }
+
+    function filterThreat(threat) {
+      currentThreatFilter = threat;
+      updateFilterUI('.filter-section:nth-child(2) .filter-option', threat);
+      applyFilters();
+    }
+
+    function updateFilterUI(selector, value) {
+      document.querySelectorAll(selector).forEach(el => {
+        el.classList.remove('active');
+        if ((value === 'all' && el.textContent.includes('All')) || 
+            el.textContent.toLowerCase().includes(value)) {
+          el.classList.add('active');
+        }
+      });
+    }
+
+    function applyFilters() {
+      filteredIOCs = allIOCs.filter(ioc => {
+        if (currentTypeFilter !== 'all' && ioc.type !== currentTypeFilter) return false;
+        if (currentThreatFilter !== 'all' && ioc.threat !== currentThreatFilter) return false;
+        return true;
+      });
+
+      displayIOCs();
+    }
+
+    function displayIOCs() {
+      const feed = document.getElementById('ioc-feed');
+      
+      if (filteredIOCs.length === 0) {
+        feed.innerHTML = '<div class="loading"><p>No IOCs match current filters</p></div>';
+        return;
+      }
+
+      feed.innerHTML = filteredIOCs.map(ioc => `
+        <div class="ioc-item ${ioc.confidence.toLowerCase()}">
+          <div class="ioc-header">
+            <div>
+              <span class="ioc-type">${ioc.type.toUpperCase()}</span>
+              <span class="ioc-type" style="background: rgba(255,0,0,0.2); border-color: var(--error); color: var(--error);">
+                ${ioc.confidence.toUpperCase()}
+              </span>
+            </div>
+            <span style="color: var(--dim-color); font-size: 0.85em;">${ioc.source}</span>
+          </div>
+          <div class="ioc-value">${ioc.value}</div>
+          <div class="ioc-meta">
+            <span><strong>Malware:</strong> ${ioc.malware}</span>
+            <span><strong>First Seen:</strong> ${ioc.firstSeen}</span>
+          </div>
+          <div style="margin-top: 10px;">
+            ${ioc.tags.map(tag => `<span class="ioc-tag">${tag}</span>`).join(' ')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function refreshFeed() {
+      loadIOCs();
+    }
+
+    function exportIOCs() {
+      const csv = [
+        ['Type', 'Value', 'Threat', 'Malware', 'Source', 'Confidence', 'First Seen', 'Tags'],
+        ...filteredIOCs.map(ioc => [
+          ioc.type,
+          ioc.value,
+          ioc.threat,
+          ioc.malware,
+          ioc.source,
+          ioc.confidence,
+          ioc.firstSeen,
+          ioc.tags.join(';')
+        ])
+      ].map(row => row.join(',')).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ioc_feed_${Date.now()}.csv`;
+      a.click();
+    }
+  </script>
+</body>
+</html>

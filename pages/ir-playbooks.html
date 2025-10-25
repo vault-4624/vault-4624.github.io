@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline'; 
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;">
+  <title>VAULT 4624 - IR Playbooks</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .playbook-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .playbook-card {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .playbook-card:hover {
+      border-color: var(--main-color);
+      box-shadow: 0 0 20px rgba(74, 250, 154, 0.2);
+      transform: translateY(-5px);
+    }
+
+    .playbook-icon {
+      font-size: 3em;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .playbook-title {
+      color: var(--main-color);
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .playbook-desc {
+      color: var(--dim-color);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: block;
+    }
+
+    .modal-content {
+      background: var(--bg-color);
+      border: 2px solid var(--main-color);
+      margin: 50px auto;
+      padding: 30px;
+      max-width: 900px;
+      box-shadow: 0 0 30px rgba(74, 250, 154, 0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--main-color);
+    }
+
+    .close-modal {
+      color: var(--error);
+      font-size: 2em;
+      cursor: pointer;
+    }
+
+    .phase {
+      background: rgba(74, 250, 154, 0.05);
+      border-left: 3px solid var(--main-color);
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .phase-title {
+      color: var(--main-color);
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .checklist {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .checklist li {
+      padding: 8px 0 8px 30px;
+      position: relative;
+      color: var(--dim-color);
+    }
+
+    .checklist li:before {
+      content: "□";
+      position: absolute;
+      left: 0;
+      color: var(--main-color);
+      font-size: 1.2em;
+    }
+
+    .severity-box {
+      display: inline-block;
+      padding: 5px 10px;
+      margin-bottom: 15px;
+      border: 1px solid;
+    }
+
+    .severity-critical {
+      background: rgba(255, 0, 0, 0.2);
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    .severity-high {
+      background: rgba(255, 204, 0, 0.2);
+      border-color: var(--warning);
+      color: var(--warning);
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <nav class="main-nav">
+    <div class="nav-brand">VAULT_4624<span class="cursor"></span></div>
+    <div class="nav-links">
+      <a href="../index.html" class="nav-link"><span class="prompt">&gt;</span> HOME</a>
+      <a href="../index.html#resources" class="nav-link"><span class="prompt">&gt;</span> RESOURCES</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>INCIDENT RESPONSE PLAYBOOKS</h1>
+    <p class="subtitle">Step-by-step procedures for common security incidents</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        10+ PLAYBOOKS
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        NIST ALIGNED
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        FIELD-TESTED
+      </div>
+    </div>
+  </section>
+
+  <div class="content-wrapper">
+    <div class="playbook-grid">
+      <div class="playbook-card" onclick="showPlaybook('ransomware')">
+        <div class="playbook-icon">🔐</div>
+        <div class="playbook-title">RANSOMWARE</div>
+        <div class="playbook-desc">Ransomware detection, containment, and recovery procedures</div>
+      </div>
+
+      <div class="playbook-card" onclick="showPlaybook('phishing')">
+        <div class="playbook-icon">🎣</div>
+        <div class="playbook-title">PHISHING</div>
+        <div class="playbook-desc">Email phishing investigation and user compromise response</div>
+      </div>
+
+      <div class="playbook-card" onclick="showPlaybook('breach')">
+        <div class="playbook-icon">💥</div>
+        <div class="playbook-title">DATA BREACH</div>
+        <div class="playbook-desc">Data exfiltration detection and breach response</div>
+      </div>
+
+      <div class="playbook-card" onclick="showPlaybook('insider')">
+        <div class="playbook-icon">👤</div>
+        <div class="playbook-title">INSIDER THREAT</div>
+        <div class="playbook-desc">Malicious insider activity detection and investigation</div>
+      </div>
+
+      <div class="playbook-card" onclick="showPlaybook('malware')">
+        <div class="playbook-icon">🦠</div>
+        <div class="playbook-title">MALWARE OUTBREAK</div>
+        <div class="playbook-desc">Malware detection, containment, and eradication</div>
+      </div>
+
+      <div class="playbook-card" onclick="showPlaybook('account')">
+        <div class="playbook-icon">🔑</div>
+        <div class="playbook-title">ACCOUNT COMPROMISE</div>
+        <div class="playbook-desc">Compromised account detection and remediation</div>
+      </div>
+
+      <div class="playbook-card" onclick="showPlaybook('ddos')">
+        <div class="playbook-icon">📡</div>
+        <div class="playbook-title">DDoS ATTACK</div>
+        <div class="playbook-desc">Distributed denial of service mitigation</div>
+      </div>
+
+      <div class="playbook-card" onclick="showPlaybook('apt')">
+        <div class="playbook-icon">🎯</div>
+        <div class="playbook-title">APT DETECTION</div>
+        <div class="playbook-desc">Advanced persistent threat hunting and response</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="playbook-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title"></h2>
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 INCIDENT RESPONSE PLAYBOOKS</p>
+      <p>NIST-aligned incident response procedures</p>
+      <p style="margin-top: 10px;"><a href="../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script src="../js/utils.js"></script>
+  <script>
+    const playbooks = {
+      ransomware: {
+        title: "RANSOMWARE INCIDENT RESPONSE",
+        severity: "CRITICAL",
+        phases: [
+          {
+            title: "1. DETECTION & INITIAL ASSESSMENT",
+            items: [
+              "Identify ransomware indicators: file extensions changed, ransom notes, encrypted files",
+              "Document initial symptoms: affected systems, time of detection, user reports",
+              "Activate incident response team and notify management",
+              "Preserve evidence: take screenshots of ransom notes, document file paths",
+              "DO NOT pay ransom immediately - assess alternatives first"
+            ]
+          },
+          {
+            title: "2. CONTAINMENT",
+            items: [
+              "Immediately isolate infected systems from network (pull network cable/disable WiFi)",
+              "Disable user accounts that may be compromised",
+              "Block C2 domains/IPs at firewall and DNS",
+              "Shut down VPN connections to prevent lateral spread",
+              "Identify patient zero and infection vector (email, RDP, vulnerability)",
+              "Take disk images of infected systems for forensics"
+            ]
+          },
+          {
+            title: "3. ERADICATION",
+            items: [
+              "Identify ransomware variant using ransom note, file extensions, or analysis",
+              "Check ID Ransomware or No More Ransom for decryptors",
+              "Remove ransomware executables and persistence mechanisms",
+              "Scan all systems with updated AV/EDR solutions",
+              "Reset all passwords (especially privileged accounts)",
+              "Apply security patches that may have been exploited"
+            ]
+          },
+          {
+            title: "4. RECOVERY",
+            items: [
+              "Restore from clean, verified backups (test for encryption first)",
+              "Rebuild compromised systems from known-good images",
+              "Verify system integrity before reconnecting to network",
+              "Monitor restored systems for 48-72 hours for re-infection",
+              "Implement enhanced monitoring and detection rules",
+              "Document recovery timeline and data loss assessment"
+            ]
+          },
+          {
+            title: "5. POST-INCIDENT",
+            items: [
+              "Conduct lessons learned meeting with IR team",
+              "Update incident response plan based on findings",
+              "Implement MFA if not already enabled",
+              "Review and test backup procedures",
+              "Conduct security awareness training on ransomware",
+              "Consider cyber insurance claim if applicable",
+              "Report to law enforcement (FBI IC3, local authorities)"
+            ]
+          }
+        ]
+      },
+      phishing: {
+        title: "PHISHING INCIDENT RESPONSE",
+        severity: "HIGH",
+        phases: [
+          {
+            title: "1. IDENTIFICATION",
+            items: [
+              "User reports suspicious email - do not delete yet",
+              "Review email headers for sender spoofing indicators",
+              "Check links and attachments (use sandbox environment)",
+              "Identify if credentials were entered on phishing page",
+              "Determine scope: how many users received the email?",
+              "Extract IOCs: sender email, URLs, attachment hashes"
+            ]
+          },
+          {
+            title: "2. CONTAINMENT",
+            items: [
+              "Block sender email address and domain at email gateway",
+              "Delete/quarantine phishing emails from all mailboxes",
+              "Block malicious URLs at web proxy/firewall",
+              "If credentials compromised: immediately reset password and revoke sessions",
+              "Enable MFA on compromised account if not already active",
+              "Monitor compromised account for unauthorized access"
+            ]
+          },
+          {
+            title: "3. INVESTIGATION",
+            items: [
+              "Check email logs for users who clicked link or opened attachment",
+              "Review authentication logs for compromised accounts",
+              "Check for unauthorized mailbox rules (forwarding, deletion)",
+              "Search for signs of lateral movement from compromised account",
+              "Analyze malware payload if attachment was executed",
+              "Document timeline of compromise and actions taken"
+            ]
+          },
+          {
+            title: "4. REMEDIATION",
+            items: [
+              "Scan affected systems for malware",
+              "Remove unauthorized mailbox rules and delegates",
+              "Review sent items for potential outbound phishing",
+              "Notify affected users and provide guidance",
+              "Update email filtering rules based on IOCs",
+              "Report phishing to Anti-Phishing Working Group (reportphishing@apwg.org)"
+            ]
+          },
+          {
+            title: "5. PREVENTION",
+            items: [
+              "Conduct targeted phishing awareness training",
+              "Implement DMARC, SPF, and DKIM if not configured",
+              "Enable Safe Links and Safe Attachments (O365/Google Workspace)",
+              "Deploy email banner warnings for external emails",
+              "Consider simulated phishing campaigns",
+              "Update incident response contacts and procedures"
+            ]
+          }
+        ]
+      },
+      breach: {
+        title: "DATA BREACH RESPONSE",
+        severity: "CRITICAL",
+        phases: [
+          {
+            title: "1. DETECTION & SCOPING",
+            items: [
+              "Identify data breach indicators: unusual data transfers, DLP alerts, access anomalies",
+              "Determine what data was accessed/exfiltrated (PII, PHI, financial, IP)",
+              "Identify time window of breach (first access to last access)",
+              "Preserve logs and evidence immediately",
+              "Engage legal counsel and consider regulatory obligations",
+              "Activate breach response team including legal, PR, IT, management"
+            ]
+          },
+          {
+            title: "2. CONTAINMENT",
+            items: [
+              "Block attacker access vectors (credentials, backdoors, compromised accounts)",
+              "Segment affected systems from network",
+              "Reset passwords for potentially compromised accounts",
+              "Review and remove unauthorized access (VPN, RDP, API keys)",
+              "Enable enhanced logging and monitoring",
+              "Consider engaging third-party forensics firm"
+            ]
+          },
+          {
+            title: "3. INVESTIGATION",
+            items: [
+              "Conduct forensic analysis of affected systems",
+              "Determine attack vector and initial compromise method",
+              "Map attacker movement through environment",
+              "Identify all data accessed/exfiltrated with file-level detail",
+              "Determine number of affected individuals",
+              "Document attacker TTPs and IOCs"
+            ]
+          },
+          {
+            title: "4. NOTIFICATION",
+            items: [
+              "Determine regulatory notification requirements (GDPR: 72hrs, state laws, HIPAA, etc.)",
+              "Notify affected individuals per legal requirements",
+              "File required regulatory reports (HHS for HIPAA, state AGs, etc.)",
+              "Prepare public statement if media interest expected",
+              "Notify law enforcement (FBI, Secret Service for financial data)",
+              "Consider offering credit monitoring/identity protection services"
+            ]
+          },
+          {
+            title: "5. REMEDIATION",
+            items: [
+              "Close all attack vectors identified",
+              "Implement data loss prevention controls",
+              "Enhance access controls and segmentation",
+              "Deploy data classification and encryption",
+              "Update incident response and breach notification procedures",
+              "Conduct post-incident review and lessons learned",
+              "Update cyber insurance carrier on incident"
+            ]
+          }
+        ]
+      },
+      malware: {
+        title: "MALWARE OUTBREAK RESPONSE",
+        severity: "HIGH",
+        phases: [
+          {
+            title: "1. IDENTIFICATION",
+            items: [
+              "Identify malware symptoms: AV alerts, unusual network traffic, system slowness",
+              "Determine malware type (trojan, worm, ransomware, cryptominer, etc.)",
+              "Identify patient zero and initial infection vector",
+              "Scope the outbreak: how many systems infected?",
+              "Extract malware samples for analysis",
+              "Check IOCs against threat intelligence feeds"
+            ]
+          },
+          {
+            title: "2. CONTAINMENT",
+            items: [
+              "Isolate infected systems from network immediately",
+              "Block malware C2 domains/IPs at perimeter",
+              "Disable user accounts if credentials compromised",
+              "Segment network to prevent spread",
+              "Take memory dumps and disk images for forensics",
+              "Deploy emergency patches for exploited vulnerabilities"
+            ]
+          },
+          {
+            title: "3. ERADICATION",
+            items: [
+              "Use EDR/AV tools to remove malware from infected systems",
+              "Manually remove persistence mechanisms (startup folders, scheduled tasks, services, registry keys)",
+              "Reimage severely infected systems from clean gold images",
+              "Scan entire network for additional infections",
+              "Deploy updated AV signatures for detected malware",
+              "Monitor for reinfection attempts"
+            ]
+          },
+          {
+            title: "4. RECOVERY",
+            items: [
+              "Bring cleaned systems back online in controlled manner",
+              "Update all systems with latest security patches",
+              "Reset passwords for potentially compromised accounts",
+              "Enable enhanced monitoring and logging",
+              "Verify business operations restored to normal",
+              "Document systems affected and remediation actions"
+            ]
+          },
+          {
+            title: "5. POST-INCIDENT",
+            items: [
+              "Conduct root cause analysis of infection vector",
+              "Update security controls to prevent recurrence",
+              "Deploy additional detection rules for malware family",
+              "Conduct security awareness training on infection vector",
+              "Share IOCs with information sharing organizations (ISACs)",
+              "Update incident response procedures with lessons learned"
+            ]
+          }
+        ]
+      }
+    };
+
+    function showPlaybook(type) {
+      const modal = document.getElementById('playbook-modal');
+      const title = document.getElementById('modal-title');
+      const body = document.getElementById('modal-body');
+      
+      const playbook = playbooks[type];
+      title.textContent = playbook.title;
+      
+      body.innerHTML = `
+        <div class="severity-box severity-${playbook.severity.toLowerCase()}">${playbook.severity} PRIORITY</div>
+        ${playbook.phases.map(phase => `
+          <div class="phase">
+            <div class="phase-title">${phase.title}</div>
+            <ul class="checklist">
+              ${phase.items.map(item => `<li>${item}</li>`).join('')}
+            </ul>
+          </div>
+        `).join('')}
+      `;
+      
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('playbook-modal').classList.remove('active');
+    }
+
+    // Close on outside click
+    window.onclick = function(event) {
+      const modal = document.getElementById('playbook-modal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+  </script>
+</body>
+</html>

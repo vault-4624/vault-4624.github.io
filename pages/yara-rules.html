@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline'; 
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;
+                 img-src 'self' data:;">
+  <title>VAULT 4624 - YARA Rules</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .rules-container {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 20px;
+    }
+
+    .rules-sidebar {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .category-item {
+      padding: 10px;
+      margin: 5px 0;
+      cursor: pointer;
+      border-left: 2px solid var(--dim-color);
+      transition: all 0.3s;
+    }
+
+    .category-item:hover {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.1);
+      padding-left: 15px;
+    }
+
+    .category-item.active {
+      border-left-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.15);
+    }
+
+    .rule-card {
+      background: rgba(74, 250, 154, 0.05);
+      border: 1px solid var(--dim-color);
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: all 0.3s;
+    }
+
+    .rule-card:hover {
+      border-color: var(--main-color);
+      box-shadow: 0 0 20px rgba(74, 250, 154, 0.2);
+    }
+
+    .rule-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .rule-name {
+      color: var(--main-color);
+      font-size: 1.3em;
+      font-weight: bold;
+    }
+
+    .rule-severity {
+      padding: 4px 10px;
+      font-size: 0.85em;
+    }
+
+    .severity-critical {
+      background: rgba(255, 0, 0, 0.2);
+      border: 1px solid var(--error);
+      color: var(--error);
+    }
+
+    .severity-high {
+      background: rgba(255, 204, 0, 0.2);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+    }
+
+    .severity-medium {
+      background: rgba(74, 250, 154, 0.2);
+      border: 1px solid var(--main-color);
+      color: var(--main-color);
+    }
+
+    .rule-description {
+      color: var(--dim-color);
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .rule-code {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--main-color);
+      padding: 15px;
+      margin: 15px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      background: var(--main-color);
+      color: var(--bg-color);
+      border: none;
+      cursor: pointer;
+      font-family: 'VT323', monospace;
+    }
+
+    .copy-btn:hover {
+      background: var(--warning);
+    }
+
+    .rule-meta {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: var(--dim-color);
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--dim-color);
+    }
+
+    @media (max-width: 968px) {
+      .rules-container {
+        grid-template-columns: 1fr;
+      }
+      .rules-sidebar {
+        position: relative;
+        top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <nav class="main-nav">
+    <div class="nav-brand">VAULT_4624<span class="cursor"></span></div>
+    <div class="nav-links">
+      <a href="../index.html#phishing" class="nav-link"><span class="prompt">&gt;</span> PHISHING INTEL</a>
+      <a href="../index.html#hunts" class="nav-link"><span class="prompt">&gt;</span> THREAT HUNTS</a>
+      <a href="../index.html#resources" class="nav-link"><span class="prompt">&gt;</span> RESOURCES</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>YARA RULES LIBRARY</h1>
+    <p class="subtitle">Pattern matching for malware identification and threat hunting</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        <span id="rule-count">50+ RULES LOADED</span>
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        MULTIPLE CATEGORIES
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        COPY-PASTE READY
+      </div>
+    </div>
+  </section>
+
+  <div class="content-wrapper">
+    <div class="rules-container">
+      <div class="rules-sidebar">
+        <h3>&gt;&gt; CATEGORIES</h3>
+        <br/>
+        <div class="category-item active" onclick="showCategory('ransomware')">Ransomware</div>
+        <div class="category-item" onclick="showCategory('apt')">APT Groups</div>
+        <div class="category-item" onclick="showCategory('webshells')">Webshells</div>
+        <div class="category-item" onclick="showCategory('trojans')">Trojans</div>
+        <div class="category-item" onclick="showCategory('rats')">RATs</div>
+        <div class="category-item" onclick="showCategory('cryptominers')">Cryptominers</div>
+        <div class="category-item" onclick="showCategory('exploits')">Exploits</div>
+      </div>
+
+      <div id="rules-content">
+        <!-- Ransomware Rules -->
+        <div id="ransomware" class="rules-category">
+          <h2>&gt;&gt; RANSOMWARE DETECTION RULES</h2>
+          <br/>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <div class="rule-name">LockBit Ransomware</div>
+              <div class="rule-severity severity-critical">CRITICAL</div>
+            </div>
+            <div class="rule-description">
+              Detects LockBit ransomware family based on strings and behavior patterns. LockBit is one of the most prolific ransomware-as-a-service operations.
+            </div>
+            <div class="rule-code">
+              <button class="copy-btn" onclick="copyRule(this)">COPY</button>
+              <pre>rule LockBit_Ransomware {
+    meta:
+        description = "Detects LockBit ransomware variants"
+        author = "VAULT 4624"
+        severity = "critical"
+        date = "2024-01-15"
+        
+    strings:
+        $s1 = "LockBit" ascii wide
+        $s2 = ".lockbit" ascii wide
+        $s3 = "Your files are encrypted" ascii wide
+        $s4 = "contact@lockbitsupp" ascii wide
+        $hex1 = { 4C 6F 63 6B 42 69 74 }
+        
+    condition:
+        uint16(0) == 0x5A4D and 2 of ($s*) or $hex1
+}</pre>
+            </div>
+            <div class="rule-meta">
+              <span><strong>Author:</strong> VAULT 4624</span>
+              <span><strong>Updated:</strong> 2024-01-15</span>
+              <span><strong>MITRE:</strong> T1486</span>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <div class="rule-name">BlackCat/ALPHV Ransomware</div>
+              <div class="rule-severity severity-critical">CRITICAL</div>
+            </div>
+            <div class="rule-description">
+              Identifies BlackCat (ALPHV) ransomware written in Rust. Known for fast encryption and targeting enterprise environments.
+            </div>
+            <div class="rule-code">
+              <button class="copy-btn" onclick="copyRule(this)">COPY</button>
+              <pre>rule BlackCat_ALPHV_Ransomware {
+    meta:
+        description = "Detects BlackCat/ALPHV ransomware"
+        author = "VAULT 4624"
+        severity = "critical"
+        
+    strings:
+        $rust1 = "rust_begin_unwind" ascii
+        $rust2 = "rust_panic" ascii
+        $s1 = "RECOVER-" ascii wide
+        $s2 = "-FILES.txt" ascii wide
+        $s3 = "alphv" nocase ascii wide
+        $s4 = "BlackCat" ascii wide
+        
+    condition:
+        uint16(0) == 0x5A4D and
+        1 of ($rust*) and 2 of ($s*)
+}</pre>
+            </div>
+            <div class="rule-meta">
+              <span><strong>MITRE:</strong> T1486</span>
+              <span><strong>Family:</strong> BlackCat/ALPHV</span>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <div class="rule-name">Generic Ransomware Note</div>
+              <div class="rule-severity severity-high">HIGH</div>
+            </div>
+            <div class="rule-description">
+              Detects common ransomware note patterns across multiple families.
+            </div>
+            <div class="rule-code">
+              <button class="copy-btn" onclick="copyRule(this)">COPY</button>
+              <pre>rule Generic_Ransomware_Note {
+    meta:
+        description = "Generic ransomware note detection"
+        author = "VAULT 4624"
+        
+    strings:
+        $pay1 = "bitcoin" nocase ascii wide
+        $pay2 = "payment" nocase ascii wide
+        $enc1 = "encrypted" nocase ascii wide
+        $enc2 = "decrypt" nocase ascii wide
+        $warn1 = "do not" nocase ascii wide
+        $warn2 = "warning" nocase ascii wide
+        $contact1 = "contact us" nocase ascii wide
+        $contact2 = "email" nocase ascii wide
+        
+    condition:
+        filesize < 100KB and
+        2 of ($pay*) and 2 of ($enc*) and
+        1 of ($warn*) and 1 of ($contact*)
+}</pre>
+            </div>
+            <div class="rule-meta">
+              <span><strong>Type:</strong> Document Analysis</span>
+              <span><strong>MITRE:</strong> T1486</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- APT Rules -->
+        <div id="apt" class="rules-category" style="display: none;">
+          <h2>&gt;&gt; APT GROUP DETECTION RULES</h2>
+          <br/>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <div class="rule-name">APT29 Cozy Bear</div>
+              <div class="rule-severity severity-critical">CRITICAL</div>
+            </div>
+            <div class="rule-description">
+              Detects tools and techniques associated with APT29 (Cozy Bear), a Russian state-sponsored group.
+            </div>
+            <div class="rule-code">
+              <button class="copy-btn" onclick="copyRule(this)">COPY</button>
+              <pre>rule APT29_CozyCar {
+    meta:
+        description = "APT29 CozyCar malware"
+        author = "VAULT 4624"
+        severity = "critical"
+        
+    strings:
+        $s1 = "CozyDuke" ascii wide
+        $s2 = "CozyCar" ascii wide
+        $cmd1 = "cmd.exe /c" ascii wide
+        $cmd2 = "powershell" nocase ascii wide
+        $api1 = "WinHttp" ascii
+        $api2 = "InternetOpen" ascii
+        
+    condition:
+        uint16(0) == 0x5A4D and
+        (1 of ($s*) or (1 of ($cmd*) and 1 of ($api*)))
+}</pre>
+            </div>
+            <div class="rule-meta">
+              <span><strong>Group:</strong> APT29</span>
+              <span><strong>Origin:</strong> Russia</span>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <div class="rule-name">APT28 Fancy Bear</div>
+              <div class="rule-severity severity-critical">CRITICAL</div>
+            </div>
+            <div class="rule-description">
+              Identifies APT28 (Fancy Bear) malware components and C2 communication patterns.
+            </div>
+            <div class="rule-code">
+              <button class="copy-btn" onclick="copyRule(this)">COPY</button>
+              <pre>rule APT28_Xagent {
+    meta:
+        description = "APT28 X-Agent implant"
+        author = "VAULT 4624"
+        
+    strings:
+        $s1 = "X-Agent" ascii wide
+        $s2 = "sofacy" nocase ascii wide
+        $net1 = "User-Agent: Mozilla/5.0" ascii
+        $com1 = "cmd_exec" ascii
+        $com2 = "file_list" ascii
+        
+    condition:
+        uint16(0) == 0x5A4D and
+        (1 of ($s*) or (1 of ($net*) and 1 of ($com*)))
+}</pre>
+            </div>
+            <div class="rule-meta">
+              <span><strong>Group:</strong> APT28</span>
+              <span><strong>Origin:</strong> Russia</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Webshells -->
+        <div id="webshells" class="rules-category" style="display: none;">
+          <h2>&gt;&gt; WEBSHELL DETECTION RULES</h2>
+          <br/>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <div class="rule-name">China Chopper Webshell</div>
+              <div class="rule-severity severity-high">HIGH</div>
+            </div>
+            <div class="rule-description">
+              Detects China Chopper webshell, commonly used by Chinese threat actors for web server compromise.
+            </div>
+            <div class="rule-code">
+              <button class="copy-btn" onclick="copyRule(this)">COPY</button>
+              <pre>rule ChinaChopper_Webshell {
+    meta:
+        description = "China Chopper webshell"
+        author = "VAULT 4624"
+        
+    strings:
+        $php1 = "eval($_POST[" ascii nocase
+        $php2 = "assert($_POST[" ascii nocase
+        $asp1 = "eval(Request(" ascii nocase
+        $asp2 = "execute(Request(" ascii nocase
+        $short = /(eval|assert|execute)\s*\(\s*(Request|\$_(POST|GET|REQUEST))\[[\'\"][a-zA-Z0-9]{1,10}[\'\"]\]\s*\)/ nocase
+        
+    condition:
+        (1 of ($php*) or 1 of ($asp*) or $short) and
+        filesize < 10KB
+}</pre>
+            </div>
+            <div class="rule-meta">
+              <span><strong>Type:</strong> Webshell</span>
+              <span><strong>MITRE:</strong> T1505.003</span>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <div class="rule-name">Generic PHP Webshell</div>
+              <div class="rule-severity severity-high">HIGH</div>
+            </div>
+            <div class="rule-description">
+              Identifies common PHP webshell patterns and dangerous functions.
+            </div>
+            <div class="rule-code">
+              <button class="copy-btn" onclick="copyRule(this)">COPY</button>
+              <pre>rule Generic_PHP_Webshell {
+    meta:
+        description = "Generic PHP webshell indicators"
+        author = "VAULT 4624"
+        
+    strings:
+        $php = "<?php" ascii nocase
+        $exec1 = "shell_exec" nocase ascii
+        $exec2 = "system(" nocase ascii
+        $exec3 = "exec(" nocase ascii
+        $exec4 = "passthru" nocase ascii
+        $upload1 = "move_uploaded_file" nocase ascii
+        $upload2 = "file_put_contents" nocase ascii
+        $b64 = "base64_decode" nocase ascii
+        $eval = "eval(" nocase ascii
+        
+    condition:
+        $php and
+        (2 of ($exec*) or ($eval and 1 of ($exec*)) or 
+        (1 of ($upload*) and 1 of ($exec*)))
+}</pre>
+            </div>
+            <div class="rule-meta">
+              <span><strong>MITRE:</strong> T1505.003</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other categories hidden by default -->
+        <div id="trojans" class="rules-category" style="display: none;">
+          <h2>&gt;&gt; TROJAN DETECTION RULES</h2>
+          <p style="color: var(--dim-color); margin: 20px 0;">Rules for detecting common trojan families...</p>
+        </div>
+
+        <div id="rats" class="rules-category" style="display: none;">
+          <h2>&gt;&gt; RAT DETECTION RULES</h2>
+          <p style="color: var(--dim-color); margin: 20px 0;">Rules for detecting Remote Access Trojans...</p>
+        </div>
+
+        <div id="cryptominers" class="rules-category" style="display: none;">
+          <h2>&gt;&gt; CRYPTOMINER DETECTION RULES</h2>
+          <p style="color: var(--dim-color); margin: 20px 0;">Rules for detecting cryptocurrency mining malware...</p>
+        </div>
+
+        <div id="exploits" class="rules-category" style="display: none;">
+          <h2>&gt;&gt; EXPLOIT DETECTION RULES</h2>
+          <p style="color: var(--dim-color); margin: 20px 0;">Rules for detecting exploit code and payloads...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 YARA RULES LIBRARY</p>
+      <p>Community-sourced and tested YARA rules for threat detection</p>
+      <p style="margin-top: 10px;"><a href="../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script src="../js/utils.js"></script>
+  <script>
+    function showCategory(category) {
+      // Hide all categories
+      document.querySelectorAll('.rules-category').forEach(cat => {
+        cat.style.display = 'none';
+      });
+
+      // Show selected category
+      document.getElementById(category).style.display = 'block';
+
+      // Update active state
+      document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function copyRule(button) {
+      const codeBlock = button.nextElementSibling;
+      const text = codeBlock.textContent;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        button.textContent = 'COPIED!';
+        button.style.background = 'var(--warning)';
+        setTimeout(() => {
+          button.textContent = 'COPY';
+          button.style.background = 'var(--main-color)';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

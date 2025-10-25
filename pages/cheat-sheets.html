@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self'; 
+                 script-src 'self' 'unsafe-inline'; 
+                 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com;">
+  <title>VAULT 4624 - Cheat Sheets</title>
+  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .cheat-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .cheat-tab {
+      padding: 10px 20px;
+      background: rgba(74, 250, 154, 0.1);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 1.1em;
+    }
+
+    .cheat-tab:hover {
+      border-color: var(--main-color);
+      background: rgba(74, 250, 154, 0.2);
+    }
+
+    .cheat-tab.active {
+      background: var(--main-color);
+      color: var(--bg-color);
+      border-color: var(--main-color);
+    }
+
+    .cheat-section {
+      display: none;
+    }
+
+    .cheat-section.active {
+      display: block;
+    }
+
+    .cheat-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .cheat-table th {
+      background: rgba(74, 250, 154, 0.1);
+      color: var(--main-color);
+      padding: 12px;
+      text-align: left;
+      border: 1px solid var(--dim-color);
+    }
+
+    .cheat-table td {
+      padding: 10px 12px;
+      border: 1px solid var(--dim-color);
+      color: var(--dim-color);
+    }
+
+    .cheat-table tr:hover {
+      background: rgba(74, 250, 154, 0.05);
+    }
+
+    .event-id {
+      color: var(--warning);
+      font-weight: bold;
+      font-family: monospace;
+    }
+
+    .severity-critical {
+      color: var(--error);
+      font-weight: bold;
+    }
+
+    .severity-high {
+      color: var(--warning);
+      font-weight: bold;
+    }
+
+    .severity-medium {
+      color: var(--main-color);
+    }
+
+    .code-inline {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 2px 6px;
+      color: var(--main-color);
+      font-family: monospace;
+      border: 1px solid var(--dim-color);
+    }
+
+    .example-box {
+      background: rgba(0, 0, 0, 0.5);
+      border-left: 3px solid var(--main-color);
+      padding: 15px;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+
+    .tip-box {
+      background: rgba(255, 204, 0, 0.1);
+      border-left: 3px solid var(--warning);
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .search-box {
+      width: 100%;
+      max-width: 500px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--dim-color);
+      color: var(--main-color);
+      padding: 10px;
+      font-family: 'VT323', monospace;
+      font-size: 1.1em;
+      margin-bottom: 20px;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--main-color);
+      box-shadow: 0 0 10px rgba(74, 250, 154, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+  <div class="overlay"></div>
+
+  <nav class="main-nav">
+    <div class="nav-brand">VAULT_4624<span class="cursor"></span></div>
+    <div class="nav-links">
+      <a href="../index.html#phishing" class="nav-link"><span class="prompt">&gt;</span> PHISHING INTEL</a>
+      <a href="../index.html#hunts" class="nav-link"><span class="prompt">&gt;</span> THREAT HUNTS</a>
+      <a href="../index.html#resources" class="nav-link"><span class="prompt">&gt;</span> RESOURCES</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>SECURITY CHEAT SHEETS</h1>
+    <p class="subtitle">Quick reference for threat hunters and incident responders</p>
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        REFERENCE ACTIVE
+      </div>
+      <div class="status-item">
+        <span class="status-indicator warning"></span>
+        SEARCHABLE DATABASE
+      </div>
+      <div class="status-item">
+        <span class="status-indicator success"></span>
+        COPY-PASTE READY
+      </div>
+    </div>
+  </section>
+
+  <div class="content-wrapper">
+    <input type="text" class="search-box" id="search-box" placeholder="Search cheat sheets...">
+
+    <div class="cheat-nav">
+      <div class="cheat-tab active" onclick="showTab('event-ids')">WINDOWS EVENT IDs</div>
+      <div class="cheat-tab" onclick="showTab('sysmon')">SYSMON EVENTS</div>
+      <div class="cheat-tab" onclick="showTab('ports')">COMMON PORTS</div>
+      <div class="cheat-tab" onclick="showTab('regex')">REGEX PATTERNS</div>
+      <div class="cheat-tab" onclick="showTab('powershell')">POWERSHELL</div>
+      <div class="cheat-tab" onclick="showTab('linux')">LINUX LOGS</div>
+    </div>
+
+    <!-- Windows Event IDs -->
+    <div id="event-ids" class="cheat-section active">
+      <h2>&gt;&gt; CRITICAL WINDOWS SECURITY EVENT IDs</h2>
+      <br/>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">Account Logon Events</h3>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Event ID</th>
+            <th>Description</th>
+            <th>Severity</th>
+            <th>Hunt Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-id">4624</td>
+            <td>An account was successfully logged on</td>
+            <td class="severity-medium">MEDIUM</td>
+            <td>Track user logons, identify lateral movement</td>
+          </tr>
+          <tr>
+            <td class="event-id">4625</td>
+            <td>An account failed to log on</td>
+            <td class="severity-high">HIGH</td>
+            <td>Brute force attempts, password spraying</td>
+          </tr>
+          <tr>
+            <td class="event-id">4634</td>
+            <td>An account was logged off</td>
+            <td class="severity-medium">MEDIUM</td>
+            <td>Session duration analysis</td>
+          </tr>
+          <tr>
+            <td class="event-id">4648</td>
+            <td>A logon was attempted using explicit credentials</td>
+            <td class="severity-high">HIGH</td>
+            <td>Lateral movement, privilege escalation</td>
+          </tr>
+          <tr>
+            <td class="event-id">4672</td>
+            <td>Special privileges assigned to new logon</td>
+            <td class="severity-high">HIGH</td>
+            <td>Admin logon detection</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">Logon Types Reference</h3>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Typical Use</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-id">2</td>
+            <td>Interactive</td>
+            <td>Console logon, physical access</td>
+          </tr>
+          <tr>
+            <td class="event-id">3</td>
+            <td>Network</td>
+            <td>SMB, file shares, remote access</td>
+          </tr>
+          <tr>
+            <td class="event-id">4</td>
+            <td>Batch</td>
+            <td>Scheduled tasks</td>
+          </tr>
+          <tr>
+            <td class="event-id">5</td>
+            <td>Service</td>
+            <td>Service startup</td>
+          </tr>
+          <tr>
+            <td class="event-id">7</td>
+            <td>Unlock</td>
+            <td>Workstation unlock</td>
+          </tr>
+          <tr>
+            <td class="event-id">10</td>
+            <td>RemoteInteractive</td>
+            <td>RDP, Terminal Services</td>
+          </tr>
+          <tr>
+            <td class="event-id">11</td>
+            <td>CachedInteractive</td>
+            <td>Cached credentials (offline)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">Process & Service Events</h3>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Event ID</th>
+            <th>Description</th>
+            <th>Severity</th>
+            <th>Hunt Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-id">4688</td>
+            <td>A new process has been created</td>
+            <td class="severity-critical">CRITICAL</td>
+            <td>Process execution tracking, command line analysis</td>
+          </tr>
+          <tr>
+            <td class="event-id">4689</td>
+            <td>A process has exited</td>
+            <td class="severity-medium">MEDIUM</td>
+            <td>Process lifetime analysis</td>
+          </tr>
+          <tr>
+            <td class="event-id">7045</td>
+            <td>A service was installed in the system</td>
+            <td class="severity-critical">CRITICAL</td>
+            <td>Persistence, malware service installation</td>
+          </tr>
+          <tr>
+            <td class="event-id">4697</td>
+            <td>A service was installed in the system</td>
+            <td class="severity-critical">CRITICAL</td>
+            <td>Alternative to 7045, persistence detection</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">Account Management</h3>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Event ID</th>
+            <th>Description</th>
+            <th>Severity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-id">4720</td>
+            <td>A user account was created</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">4722</td>
+            <td>A user account was enabled</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">4724</td>
+            <td>An attempt was made to reset an account's password</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">4728</td>
+            <td>A member was added to a security-enabled global group</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">4732</td>
+            <td>A member was added to a security-enabled local group</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">4756</td>
+            <td>A member was added to a security-enabled universal group</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 PRO TIP:</strong> Enable command line logging (Event 4688) via GPO: Computer Configuration → Administrative Templates → System → Audit Process Creation → Include command line in process creation events
+      </div>
+    </div>
+
+    <!-- Sysmon Events -->
+    <div id="sysmon" class="cheat-section">
+      <h2>&gt;&gt; SYSMON EVENT IDs</h2>
+      <br/>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Event ID</th>
+            <th>Description</th>
+            <th>Key Fields</th>
+            <th>Hunt Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-id">1</td>
+            <td>Process Creation</td>
+            <td>CommandLine, ParentImage, Hashes</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">3</td>
+            <td>Network Connection</td>
+            <td>DestinationIp, DestinationPort, Image</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">7</td>
+            <td>Image Loaded (DLL)</td>
+            <td>ImageLoaded, Signed, Signature</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">8</td>
+            <td>CreateRemoteThread</td>
+            <td>SourceImage, TargetImage</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">10</td>
+            <td>Process Access</td>
+            <td>SourceImage, TargetImage, GrantedAccess</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">11</td>
+            <td>File Created</td>
+            <td>TargetFilename, Image</td>
+            <td class="severity-medium">MEDIUM</td>
+          </tr>
+          <tr>
+            <td class="event-id">12/13/14</td>
+            <td>Registry Events</td>
+            <td>TargetObject, Image, Details</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">15</td>
+            <td>File Stream Created</td>
+            <td>TargetFilename, Contents (ADS)</td>
+            <td class="severity-medium">MEDIUM</td>
+          </tr>
+          <tr>
+            <td class="event-id">22</td>
+            <td>DNS Query</td>
+            <td>QueryName, Image</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 RECOMMENDED:</strong> Use Sysmon-modular config from olafhartong/sysmon-modular for comprehensive coverage with MITRE ATT&CK mapping
+      </div>
+    </div>
+
+    <!-- Common Ports -->
+    <div id="ports" class="cheat-section">
+      <h2>&gt;&gt; COMMON PORTS & ATTACK VECTORS</h2>
+      <br/>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">Suspicious Outbound Ports</h3>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Port</th>
+            <th>Service</th>
+            <th>Attack Vector</th>
+            <th>Hunt Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-id">22</td>
+            <td>SSH</td>
+            <td>Remote access, tunneling, data exfiltration</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">23</td>
+            <td>Telnet</td>
+            <td>Unencrypted remote access, legacy systems</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">3389</td>
+            <td>RDP</td>
+            <td>Lateral movement, ransomware deployment</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">445</td>
+            <td>SMB</td>
+            <td>EternalBlue, lateral movement, file exfil</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">1433</td>
+            <td>MSSQL</td>
+            <td>SQL injection, data theft</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">3306</td>
+            <td>MySQL</td>
+            <td>Database attacks, credential theft</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">5900</td>
+            <td>VNC</td>
+            <td>Remote desktop access</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+          <tr>
+            <td class="event-id">4444</td>
+            <td>Metasploit</td>
+            <td>Common C2 port for Metasploit</td>
+            <td class="severity-critical">CRITICAL</td>
+          </tr>
+          <tr>
+            <td class="event-id">8080</td>
+            <td>HTTP-Alt</td>
+            <td>C2 communication, web proxies</td>
+            <td class="severity-medium">MEDIUM</td>
+          </tr>
+          <tr>
+            <td class="event-id">53</td>
+            <td>DNS</td>
+            <td>DNS tunneling, C2 beaconing</td>
+            <td class="severity-high">HIGH</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">High-Risk Port Ranges</h3>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Range</th>
+            <th>Description</th>
+            <th>Why Suspicious</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-id">1024-5000</td>
+            <td>Dynamic/Private Ports</td>
+            <td>Often used by malware for C2</td>
+          </tr>
+          <tr>
+            <td class="event-id">4444, 5555, 6666</td>
+            <td>Common Hacker Ports</td>
+            <td>Frequently used in pentesting/malware</td>
+          </tr>
+          <tr>
+            <td class="event-id">31337, 27374</td>
+            <td>Backdoor Ports</td>
+            <td>Classic backdoor/remote access tools</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Regex Patterns -->
+    <div id="regex" class="cheat-section">
+      <h2>&gt;&gt; USEFUL REGEX PATTERNS</h2>
+      <br/>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">IOC Extraction</h3>
+      
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">IPv4 Address:</strong>
+        <div class="example-box">\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b</div>
+        <div class="tip-box" style="background: rgba(74, 250, 154, 0.05); border-color: var(--main-color);">
+          Example match: 192.168.1.1, 10.0.0.1
+        </div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Email Address:</strong>
+        <div class="example-box">[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}</div>
+        <div class="tip-box" style="background: rgba(74, 250, 154, 0.05); border-color: var(--main-color);">
+          Example match: user@example.com, admin@malicious-site.xyz
+        </div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">URL/Domain:</strong>
+        <div class="example-box">https?://[^\s<>"{}|\\^`\[\]]+</div>
+        <div class="tip-box" style="background: rgba(74, 250, 154, 0.05); border-color: var(--main-color);">
+          Example match: http://evil-site.com/payload.exe
+        </div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">MD5 Hash:</strong>
+        <div class="example-box">\b[a-fA-F0-9]{32}\b</div>
+        <div class="tip-box" style="background: rgba(74, 250, 154, 0.05); border-color: var(--main-color);">
+          Example match: 5d41402abc4b2a76b9719d911017c592
+        </div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">SHA256 Hash:</strong>
+        <div class="example-box">\b[a-fA-F0-9]{64}\b</div>
+        <div class="tip-box" style="background: rgba(74, 250, 154, 0.05); border-color: var(--main-color);">
+          Example match: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        </div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Windows File Path:</strong>
+        <div class="example-box">[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*</div>
+        <div class="tip-box" style="background: rgba(74, 250, 154, 0.05); border-color: var(--main-color);">
+          Example match: C:\Windows\System32\cmd.exe
+        </div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Base64 (minimum 20 chars):</strong>
+        <div class="example-box">(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?</div>
+        <div class="tip-box" style="background: rgba(74, 250, 154, 0.05); border-color: var(--main-color);">
+          Useful for detecting encoded payloads
+        </div>
+      </div>
+    </div>
+
+    <!-- PowerShell Commands -->
+    <div id="powershell" class="cheat-section">
+      <h2>&gt;&gt; POWERSHELL HUNTING COMMANDS</h2>
+      <br/>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Get Security Event Logs (Last 24h):</strong>
+        <div class="example-box">Get-WinEvent -FilterHashtable @{LogName='Security'; StartTime=(Get-Date).AddDays(-1)} | Select TimeCreated, Id, Message</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Find Failed Logon Attempts:</strong>
+        <div class="example-box">Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4625} | Select TimeCreated, @{N='User';E={$_.Properties[5].Value}}, @{N='WorkStation';E={$_.Properties[13].Value}}</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">List Running Processes with Network Connections:</strong>
+        <div class="example-box">Get-NetTCPConnection | Select LocalAddress, LocalPort, RemoteAddress, RemotePort, State, @{Name="Process";Expression={(Get-Process -Id $_.OwningProcess).ProcessName}}</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Find Suspicious Scheduled Tasks:</strong>
+        <div class="example-box">Get-ScheduledTask | Where-Object {$_.Principal.UserId -eq "SYSTEM" -and $_.Actions.Execute -match "powershell|cmd"} | Select TaskName, Actions</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">List Services with Unusual Paths:</strong>
+        <div class="example-box">Get-WmiObject Win32_Service | Where-Object {$_.PathName -notmatch "system32" -and $_.State -eq "Running"} | Select Name, PathName, State</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Check for Persistence (Registry Run Keys):</strong>
+        <div class="example-box">Get-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run", "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"</div>
+      </div>
+    </div>
+
+    <!-- Linux Logs -->
+    <div id="linux" class="cheat-section">
+      <h2>&gt;&gt; LINUX LOG LOCATIONS & COMMANDS</h2>
+      <br/>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">Critical Log Files</h3>
+      <table class="cheat-table">
+        <thead>
+          <tr>
+            <th>Log File</th>
+            <th>Description</th>
+            <th>Key Events</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="code-inline">/var/log/auth.log</td>
+            <td>Authentication attempts (Debian/Ubuntu)</td>
+            <td>SSH logins, sudo usage, failed auth</td>
+          </tr>
+          <tr>
+            <td class="code-inline">/var/log/secure</td>
+            <td>Authentication attempts (RHEL/CentOS)</td>
+            <td>SSH logins, sudo usage, failed auth</td>
+          </tr>
+          <tr>
+            <td class="code-inline">/var/log/syslog</td>
+            <td>System-wide messages</td>
+            <td>Service starts, system events</td>
+          </tr>
+          <tr>
+            <td class="code-inline">/var/log/messages</td>
+            <td>General system messages (RHEL)</td>
+            <td>Kernel, system services</td>
+          </tr>
+          <tr>
+            <td class="code-inline">/var/log/audit/audit.log</td>
+            <td>SELinux/auditd events</td>
+            <td>File access, system calls</td>
+          </tr>
+          <tr>
+            <td class="code-inline">~/.bash_history</td>
+            <td>User command history</td>
+            <td>Commands executed by user</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="color: var(--main-color); margin: 30px 0 15px 0;">Common Hunting Commands</h3>
+      
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Find Failed SSH Attempts:</strong>
+        <div class="example-box">grep "Failed password" /var/log/auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -rn</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">List Successful SSH Logins:</strong>
+        <div class="example-box">grep "Accepted" /var/log/auth.log | awk '{print $1, $2, $3, $9, $11}'</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Find Recently Modified Files:</strong>
+        <div class="example-box">find /tmp /var/tmp /dev/shm -type f -mtime -1 -ls</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">List Listening Ports:</strong>
+        <div class="example-box">netstat -tulpn | grep LISTEN</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Check for Suspicious Cron Jobs:</strong>
+        <div class="example-box">cat /etc/crontab /var/spool/cron/* /etc/cron.d/* 2>/dev/null</div>
+      </div>
+
+      <div style="margin: 20px 0;">
+        <strong style="color: var(--main-color);">Find SUID/SGID Files:</strong>
+        <div class="example-box">find / -perm -4000 -o -perm -2000 2>/dev/null</div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>&gt;&gt; VAULT 4624 SECURITY CHEAT SHEETS</p>
+      <p>Quick reference for threat hunting operations</p>
+      <p style="margin-top: 10px;"><a href="../index.html" style="color: var(--dim-color);">← Return to Terminal</a></p>
+    </div>
+  </footer>
+
+  <script src="../js/utils.js"></script>
+  <script>
+    function showTab(tabId) {
+      // Hide all sections
+      document.querySelectorAll('.cheat-section').forEach(section => {
+        section.classList.remove('active');
+      });
+
+      // Show selected section
+      document.getElementById(tabId).classList.add('active');
+
+      // Update tab states
+      document.querySelectorAll('.cheat-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Search functionality
+    document.getElementById('search-box').addEventListener('input', function(e) {
+      const query = e.target.value.toLowerCase();
+      const tables = document.querySelectorAll('.cheat-table tbody tr');
+      
+      tables.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>
